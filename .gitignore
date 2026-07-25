@@ -1,4 +1,4 @@
-.runtime/
+﻿.runtime/
 *.log
 __pycache__/
 *.pyc
@@ -7,3 +7,6 @@ Thumbs.db
 claude/node_modules/
 claude/dist/
 claude/src-tauri/target/
+.idea/
+.vscode/
+*.local
