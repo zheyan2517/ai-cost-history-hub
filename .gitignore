@@ -1,0 +1,9 @@
+.runtime/
+*.log
+__pycache__/
+*.pyc
+.DS_Store
+Thumbs.db
+claude/node_modules/
+claude/dist/
+claude/src-tauri/target/

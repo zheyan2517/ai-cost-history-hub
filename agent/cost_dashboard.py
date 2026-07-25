@@ -2325,6 +2325,36 @@ class DashboardHandler(http.server.BaseHTTPRequestHandler):
             html_content = generate_html()
             self.wfile.write(html_content.encode("utf-8"))
 
+        elif parsed.path.startswith("/assets/"):
+            # Serve static dashboard assets (background image, etc.)
+            name = Path(parsed.path).name
+            if name in {".", ".."} or "/" in name or "\\" in name:
+                self.send_response(400)
+                self.end_headers()
+                return
+            asset_path = ASSETS_DIR / name
+            if not asset_path.is_file():
+                self.send_response(404)
+                self.end_headers()
+                return
+            suffix = asset_path.suffix.lower()
+            content_type = {
+                ".css": "text/css; charset=utf-8",
+                ".js": "application/javascript; charset=utf-8",
+                ".jpg": "image/jpeg",
+                ".jpeg": "image/jpeg",
+                ".png": "image/png",
+                ".webp": "image/webp",
+                ".svg": "image/svg+xml",
+            }.get(suffix, "application/octet-stream")
+            data = asset_path.read_bytes()
+            self.send_response(200)
+            self.send_header("Content-type", content_type)
+            self.send_header("Content-Length", str(len(data)))
+            self.send_header("Cache-Control", "public, max-age=3600")
+            self.end_headers()
+            self.wfile.write(data)
+
         elif parsed.path == "/session":
             uid = query.get("uid", [""])[0]
             session_info = SESSION_REGISTRY.get(uid)

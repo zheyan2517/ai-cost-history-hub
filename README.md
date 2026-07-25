@@ -1,61 +1,51 @@
-# Wangquanti — 方案 A：CCHV + Agent Cost Dashboard 侧车整合
+# Wangquanti · 方案 A 整合版
 
-将 **Claude Code History Viewer (CCHV)** 作为主壳，**Agent Cost Dashboard** 作为本机只读侧车进程，在一个入口里同时使用会话浏览与费用看板。
+**CCHV（会话历史）** + **Agent Cost Dashboard（费用看板）** 侧车整合。
 
-```
-E:\xiangmu\wangquanti\
-├── claude\                 # CCHV 桌面应用（已接入侧车命令）
-├── agent\                  # Agent Cost Dashboard（纯 Python）
-├── start-cost-dashboard.bat
-├── start-all.bat
-└── README.md
-```
-
-## 架构
+## 目录
 
 ```
-┌──────────────────────────────────────┐
-│  CCHV (Tauri 主程序)                   │
-│  Header →「Cost Dashboard」钱包图标     │
-│         │ open_cost_dashboard          │
-│         ▼                              │
-│  python cost_dashboard.py              │
-│  --host 127.0.0.1 --port 8753+         │
-│         │ 浏览器打开                    │
-│         ▼                              │
-│  http://127.0.0.1:<port>/              │
-└──────────────────────────────────────┘
-              │ 只读
-              ▼
-     ~/.claude  ~/.codex  ~/.pi ...
+wangquanti/
+├── start.bat                 # 主入口：协调器 + 统一门户
+├── start-cost-dashboard.bat  # 仅费用看板
+├── start-all.bat             # 同 start.bat
+├── config.json               # 端口 / 路径配置
+├── scripts/
+│   └── coordinator.py        # 进程协调、健康检查、门户
+├── agent/                    # Agent Cost Dashboard
+└── claude/                   # CCHV（顶栏钱包按钮接入侧车）
 ```
 
-## 安全约定
+## 立即运行（无需 Rust）
 
-| 项 | 做法 |
-|----|------|
-| 网络 | 侧车**强制**绑定 `127.0.0.1`，不监听 `0.0.0.0` |
-| 数据 | 两侧均只读本地 session 目录，不写对方数据 |
-| 进程 | 侧车独立进程；主程序退出时会尝试结束侧车 |
-| 端口 | 默认 `8753`，占用时自动尝试后续端口 |
-
-## 快速使用（无需先编译 CCHV）
-
-需要 **Python 3.12+**。
+要求：**Python 3.12+**
 
 ```bat
-# 仅启动费用看板并打开浏览器
-E:\xiangmu\wangquanti\start-cost-dashboard.bat
-
-# 启动看板 + 打印 CCHV 开发/构建说明
-E:\xiangmu\wangquanti\start-all.bat
+E:\xiangmu\wangquanti\start.bat
 ```
 
-浏览器访问：`http://127.0.0.1:8753/`
+会：
 
-## 桌面 App 内一键打开（推荐）
+1. 在 `127.0.0.1:8753`（占用则顺延）启动费用看板  
+2. 在 `http://127.0.0.1:8740/` 打开统一门户（内嵌看板 + 状态）  
+3. 仅绑定本机 loopback，不暴露局域网  
 
-1. 安装依赖并启动 CCHV 开发模式：
+仅看板：
+
+```bat
+E:\xiangmu\wangquanti\start-cost-dashboard.bat
+```
+
+状态 / 停止：
+
+```bat
+python scripts\coordinator.py status
+python scripts\coordinator.py stop
+```
+
+## 桌面 App（CCHV + 一键看板）
+
+需要：**Node.js、pnpm、Rust（cargo）、Python 3.12+**
 
 ```bat
 cd E:\xiangmu\wangquanti\claude
@@ -63,54 +53,46 @@ pnpm install
 pnpm tauri:dev
 ```
 
-2. 在顶部工具栏点击 **钱包图标（Cost Dashboard）**  
-   - 自动查找 `..\agent\cost_dashboard.py`  
-   - 启动 Python 侧车（若尚未运行）  
-   - 用系统浏览器打开看板  
+启动后点顶栏 **钱包图标（Cost Dashboard）**：
 
-3. 退出 CCHV 时，侧车进程会被停止。
+- 自动启动或复用本机费用看板  
+- 浏览器打开 `http://127.0.0.1:<port>`  
+- 退出 App 时停止由 App 拉起的侧车进程  
 
-### 环境变量（可选）
+环境变量（可选）：
 
 | 变量 | 含义 |
 |------|------|
-| `AGENT_COST_DASHBOARD_DIR` | 指向包含 `cost_dashboard.py` 的目录（默认自动解析 `wangquanti\agent`） |
+| `AGENT_COST_DASHBOARD_DIR` | 指向含 `cost_dashboard.py` 的目录 |
 
-## 代码接入点
+## 安全约定
 
-| 位置 | 作用 |
+| 项 | 做法 |
+|----|------|
+| 监听地址 | 强制 `127.0.0.1` |
+| 数据 | 只读本地 agent session |
+| 进程 | 协调器 / CCHV 管理生命周期 |
+| 日志 | `.runtime/cost-dashboard.log` 或系统 temp |
+
+## 接入代码
+
+| 文件 | 作用 |
 |------|------|
-| `claude/src-tauri/src/commands/cost_dashboard.rs` | 启动/停止/状态查询侧车 |
-| `claude/src-tauri/src/lib.rs` | 注册命令；退出时 `shutdown_cost_dashboard` |
-| `claude/src/layouts/Header/Header.tsx` | 顶部「Cost Dashboard」按钮 |
+| `scripts/coordinator.py` | 统一协调与门户 |
+| `claude/src-tauri/src/commands/cost_dashboard.rs` | Tauri 侧车命令 |
+| `claude/src/services/costDashboard.ts` | 前端 API |
+| `claude/src/layouts/Header/Header.tsx` | 顶栏入口 |
 
-Tauri 命令：
+## 职责
 
-- `open_cost_dashboard` — 启动（如需）并打开浏览器  
-- `stop_cost_dashboard` — 停止侧车  
-- `cost_dashboard_status` — 查询是否在运行  
-
-## 职责划分
-
-| 能力 | 使用 |
+| 能力 | 组件 |
 |------|------|
-| 多厂商会话浏览、消息、搜索、分析 | **CCHV** |
-| 跨 agent 花费、按日/模型/工具账单 | **Agent Cost Dashboard** |
+| 多厂商会话 / 消息 / 搜索 | CCHV |
+| 跨 agent 费用 / 模型账单 | Cost Dashboard |
 
 ## 故障排查
 
-1. **找不到 Python**  
-   安装 Python 3.12+，并确保 `py -3` 或 `python` 在 PATH 中。
-
-2. **找不到 cost_dashboard.py**  
-   确认 `E:\xiangmu\wangquanti\agent\cost_dashboard.py` 存在，或设置 `AGENT_COST_DASHBOARD_DIR`。
-
-3. **端口被占用**  
-   侧车会自动扫描 `8753–8772`；也可手动：
-
-   ```bat
-   python cost_dashboard.py --host 127.0.0.1 --port 8760
-   ```
-
-4. **WebUI 服务模式**  
-   Cost Dashboard 按钮仅在 **Tauri 桌面壳** 中显示；纯 `--serve` WebUI 请用 `start-cost-dashboard.bat`。
+1. **Python 找不到** → 安装 3.12+ 并加入 PATH  
+2. **端口占用** → 协调器自动换端口；或 `coordinator.py stop`  
+3. **CCHV 无法 tauri:dev** → 需安装 [Rust](https://rustup.rs) 与 WebView2（Windows 通常已有）  
+4. **门户 iframe 空白** → 直接打开侧栏中的看板 URL  

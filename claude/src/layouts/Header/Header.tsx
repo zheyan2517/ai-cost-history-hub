@@ -24,7 +24,10 @@ import { useModal } from "@/contexts/modal";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
 import { getAssetPath, isMacOS, isTauri } from "@/utils/platform";
-import { api } from "@/services/api";
+import {
+  canUseDesktopCostDashboard,
+  openCostDashboard,
+} from "@/services/costDashboard";
 import { SettingDropdown } from "./SettingDropdown";
 
 interface HeaderProps {
@@ -63,15 +66,13 @@ export const Header = ({ analyticsActions, analyticsComputed, updater }: HeaderP
     isLoadingProjects ||
     isLoadingSessions ||
     isLoadingMessages;
-  const canUseCostDashboard = isTauri();
+  const canUseCostDashboard = canUseDesktopCostDashboard();
 
   const handleOpenCostDashboard = async () => {
     if (!canUseCostDashboard || isOpeningCostDashboard) return;
     setIsOpeningCostDashboard(true);
     try {
-      const result = await api<{ url: string; port: number; started: boolean }>(
-        "open_cost_dashboard"
-      );
+      const result = await openCostDashboard();
       toast.success(
         result.started
           ? t("costDashboard.started", {

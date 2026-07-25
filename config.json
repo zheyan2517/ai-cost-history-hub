@@ -1,0 +1,17 @@
+{
+  "costDashboard": {
+    "host": "127.0.0.1",
+    "port": 8753,
+    "portRange": 20,
+    "readyTimeoutSec": 15
+  },
+  "portal": {
+    "host": "127.0.0.1",
+    "port": 8740
+  },
+  "paths": {
+    "agentDir": "agent",
+    "claudeDir": "claude",
+    "dashboardScript": "cost_dashboard.py"
+  }
+}
