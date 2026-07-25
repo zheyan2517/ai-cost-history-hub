@@ -55,8 +55,8 @@ Browse every session with full details:
 Requires **Python 3.12+**.
 
 ```bash
-git clone https://github.com/user/pi-cost-dashboard
-cd pi-cost-dashboard
+git clone https://github.com/user/ai-cost-history-hub
+cd ai-cost-history-hub
 ```
 
 ## Usage

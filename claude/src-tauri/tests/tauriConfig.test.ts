@@ -47,7 +47,7 @@ describe('Tauri Configuration Tests', () => {
 
   describe('Product Information Validation', () => {
     it('should have correct product name', () => {
-      expect(config.productName).toBe('Claude Code History Viewer');
+      expect(config.productName).toBe('AI Cost History Hub');
       expect(typeof config.productName).toBe('string');
       expect(config.productName.length).toBeGreaterThan(0);
     });
@@ -59,7 +59,7 @@ describe('Tauri Configuration Tests', () => {
 
     it('should have valid app identifier in reverse domain notation', () => {
       expect(config.identifier).toMatch(/^[a-zA-Z0-9.-]+$/);
-      expect(config.identifier).toBe('com.claude.history-viewer');
+      expect(config.identifier).toBe('com.aicosthistoryhub.app');
       expect(config.identifier.split('.').length).toBeGreaterThanOrEqual(3);
     });
 
@@ -123,7 +123,7 @@ describe('Tauri Configuration Tests', () => {
         // title bar falls back to productName / CFBundleName instead of the
         // window's own title. See PR #337.
         expect(mainWindow.title).toBe('');
-        expect(config.productName).toBe('Claude Code History Viewer');
+        expect(config.productName).toBe('AI Cost History Hub');
       });
 
       it('should have reasonable default window dimensions', () => {
@@ -249,7 +249,7 @@ describe('Tauri Configuration Tests', () => {
         config.plugins.updater.endpoints.forEach((endpoint: string) => {
           expect(endpoint).toMatch(/^https:\/\//); // HTTPS required
           expect(endpoint).toContain('github.com');
-          expect(endpoint).toContain('local/claude-code-history-viewer');
+          expect(endpoint).toContain('zheyan2517/ai-cost-history-hub');
           expect(endpoint).toContain('latest.json');
         });
       });
@@ -351,12 +351,12 @@ describe('Tauri Configuration Tests', () => {
     });
   });
 
-  describe('Configuration Consistency and Integration', () => {
+  describe('Configuration Consistency', () => {
     it('should have a non-placeholder productName (window title is intentionally empty)', () => {
       // window[0].title is empty by design (PR #337); productName remains the
       // canonical app name surfaced via CFBundleName.
       expect(config.app.windows[0].title).toBe('');
-      expect(config.productName).toBe('Claude Code History Viewer');
+      expect(config.productName).toBe('AI Cost History Hub');
       expect(config.productName).not.toContain('undefined');
       expect(config.productName).not.toContain('null');
     });
@@ -435,7 +435,7 @@ describe('Tauri Configuration Tests', () => {
       expect(parts.length).toBeGreaterThanOrEqual(3);
       expect(parts[0]).toBe('com'); // Proper reverse domain
       expect(parts[1]).toBe('claude');
-      expect(parts[2]).toBe('history-viewer');
+      expect(parts[2]).toBe('app');
     });
 
     it('should not expose sensitive information', () => {
@@ -465,7 +465,7 @@ describe('Tauri Configuration Tests', () => {
 });
 
 // Integration tests for file system and configuration loading
-describe('Configuration File Integration Tests', () => {
+describe('Configuration File Loading Tests', () => {
   it('should successfully read configuration file from expected location', () => {
     expect(() => {
       const content = fs.readFileSync(configPath, 'utf-8');

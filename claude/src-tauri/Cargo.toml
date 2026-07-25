@@ -1,7 +1,7 @@
 [package]
 name = "claude-code-history-viewer"
 version = "1.22.0"
-description = "Desktop app to browse and analyze Claude Code conversation history"
+description = "AI Cost History Hub — local conversation history and cost analytics"
 license = "MIT"
 
 edition = "2021"

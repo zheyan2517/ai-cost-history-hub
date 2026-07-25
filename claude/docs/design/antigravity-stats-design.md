@@ -498,7 +498,7 @@ PATH="$HOME/.cargo/bin:$PATH" cargo check --manifest-path src-tauri/Cargo.toml
 如果本地 `target` 被其他进程占用，可使用独立目录：
 
 ```bash
-PATH="$HOME/.cargo/bin:$PATH" CARGO_TARGET_DIR=/tmp/cchv-antigravity-check cargo check --manifest-path src-tauri/Cargo.toml
+PATH="$HOME/.cargo/bin:$PATH" CARGO_TARGET_DIR=/tmp/achh-antigravity-check cargo check --manifest-path src-tauri/Cargo.toml
 ```
 
 ## 9.2 前端测试
@@ -700,7 +700,7 @@ PATH="$HOME/.cargo/bin:$PATH" cargo check --manifest-path src-tauri/Cargo.toml
 如果本地 `target` 目录被其他进程占用：
 
 ```bash
-PATH="$HOME/.cargo/bin:$PATH" CARGO_TARGET_DIR=/tmp/cchv-antigravity-check cargo check --manifest-path src-tauri/Cargo.toml
+PATH="$HOME/.cargo/bin:$PATH" CARGO_TARGET_DIR=/tmp/achh-antigravity-check cargo check --manifest-path src-tauri/Cargo.toml
 ```
 
 通过标准：

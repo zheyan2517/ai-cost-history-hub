@@ -11,7 +11,7 @@ tools: Read, Grep
 model: haiku
 ---
 
-You check command-surface parity for **claude-code-history-viewer**, which ships
+You check command-surface parity for **ai-cost-history-hub**, which ships
 two backends over the same handlers:
 - **Desktop (Tauri)**: commands registered in `tauri::generate_handler![ ... ]`
   inside `src-tauri/src/lib.rs` (around line 154).

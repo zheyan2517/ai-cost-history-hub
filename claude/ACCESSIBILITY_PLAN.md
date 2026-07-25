@@ -1,7 +1,7 @@
 # Accessibility Plan (Visually Impaired and Blind Coders)
 
 ## Objective
-Make Claude Code History Viewer robust for blind and low-vision coders by prioritizing screen reader semantics, full keyboard workflows, and scalable readability without breaking existing power-user flows.
+Make AI Cost History Hub robust for blind and low-vision coders by prioritizing screen reader semantics, full keyboard workflows, and scalable readability without breaking existing power-user flows.
 
 ## Success Metrics
 1. 100% keyboard completion for core workflows: select project, open session, read messages, open settings, change filters.

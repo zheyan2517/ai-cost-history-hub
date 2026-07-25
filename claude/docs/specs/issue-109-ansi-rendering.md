@@ -1,6 +1,6 @@
 # Spec: ANSI Color Code Rendering for Terminal Output
 
-> **Issue:** [#109](https://github.com/local/claude-code-history-viewer/issues/109)
+> **Issue:** [#109](https://github.com/zheyan2517/ai-cost-history-hub/issues/109)
 > **Type:** MAJOR — New utility + component changes across multiple renderers
 > **Status:** ✅ Implemented (see PR #111)
 

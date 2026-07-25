@@ -1,21 +1,21 @@
 <div align="center">
 
-<img src="docs/assets/app-icon.png" alt="CCHV Logo" width="120" />
+<img src="docs/assets/app-icon.png" alt="App Logo" width="120" />
 
-# Claude Code History Viewer
+# AI Cost History Hub
 
 **The unified history viewer for AI coding assistants.**
 
 Browse, search, and analyze conversations from **Claude Code**, **Gemini CLI**, **Antigravity**, **Codex CLI**, **Cline**, **Cursor**, **Aider**, **OpenCode**, **ForgeCode**, and **CodeBuddy Code** — as a desktop app or headless server. 100% offline.
 
-[![Version](https://img.shields.io/github/v/release/local/claude-code-history-viewer?label=Version&color=blue)](https://github.com/local/claude-code-history-viewer/releases)
-[![Stars](https://img.shields.io/github/stars/local/claude-code-history-viewer?style=flat&color=yellow)](https://github.com/local/claude-code-history-viewer/stargazers)
-[![License](https://img.shields.io/github/license/local/claude-code-history-viewer)](LICENSE)
-[![Rust Tests](https://img.shields.io/github/actions/workflow/status/local/claude-code-history-viewer/rust-tests.yml?label=Rust%20Tests)](https://github.com/local/claude-code-history-viewer/actions/workflows/rust-tests.yml)
-[![Last Commit](https://img.shields.io/github/last-commit/local/claude-code-history-viewer)](https://github.com/local/claude-code-history-viewer/commits/main)
+[![Version](https://img.shields.io/github/v/release/zheyan2517/ai-cost-history-hub?label=Version&color=blue)](https://github.com/zheyan2517/ai-cost-history-hub/releases)
+[![Stars](https://img.shields.io/github/stars/zheyan2517/ai-cost-history-hub?style=flat&color=yellow)](https://github.com/zheyan2517/ai-cost-history-hub/stargazers)
+[![License](https://img.shields.io/github/license/zheyan2517/ai-cost-history-hub)](LICENSE)
+[![Rust Tests](https://img.shields.io/github/actions/workflow/status/zheyan2517/ai-cost-history-hub/rust-tests.yml?label=Rust%20Tests)](https://github.com/zheyan2517/ai-cost-history-hub/actions/workflows/rust-tests.yml)
+[![Last Commit](https://img.shields.io/github/last-commit/zheyan2517/ai-cost-history-hub)](https://github.com/zheyan2517/ai-cost-history-hub/commits/main)
 ![Platform](https://img.shields.io/badge/Platform-macOS%20%7C%20Windows%20%7C%20Linux-lightgrey)
 
-[Website](https://local.github.io/claude-code-history-viewer/) · [Download](https://github.com/local/claude-code-history-viewer/releases) · [Report Bug](https://github.com/local/claude-code-history-viewer/issues)
+[Website](https://local.github.io/ai-cost-history-hub/) · [Download](https://github.com/zheyan2517/ai-cost-history-hub/releases) · [Report Bug](https://github.com/zheyan2517/ai-cost-history-hub/issues)
 
 **Language**: English
 
@@ -38,21 +38,21 @@ Browse, search, and analyze conversations from **Claude Code**, **Gemini CLI**, 
 
 | Platform | Download |
 |----------|----------|
-| macOS (Universal) | [`.dmg`](https://github.com/local/claude-code-history-viewer/releases/latest) |
-| Windows (x64) | [`.exe`](https://github.com/local/claude-code-history-viewer/releases/latest) / [`.zip` (portable)](https://github.com/local/claude-code-history-viewer/releases/latest) |
-| Linux (x64) | [`.AppImage`](https://github.com/local/claude-code-history-viewer/releases/latest) |
+| macOS (Universal) | [`.dmg`](https://github.com/zheyan2517/ai-cost-history-hub/releases/latest) |
+| Windows (x64) | [`.exe`](https://github.com/zheyan2517/ai-cost-history-hub/releases/latest) / [`.zip` (portable)](https://github.com/zheyan2517/ai-cost-history-hub/releases/latest) |
+| Linux (x64) | [`.AppImage`](https://github.com/zheyan2517/ai-cost-history-hub/releases/latest) |
 
 **Homebrew** (macOS):
 
 ```bash
-brew install --cask local/tap/claude-code-history-viewer
+brew install --cask local/tap/ai-cost-history-hub
 ```
 
 **Headless server** — access from any browser:
 
 ```bash
-brew install local/tap/cchv-server   # or: curl -fsSL https://...install-server.sh | sh
-cchv-server --serve                       # → http://localhost:3727
+brew install local/tap/history-hub-server   # or: curl -fsSL https://...install-server.sh | sh
+history-hub-server --serve                       # → http://localhost:3727
 ```
 
 See [Server Mode](#server-mode-webui) for Docker, VPS, and systemd setup.
@@ -61,7 +61,7 @@ See [Server Mode](#server-mode-webui) for Docker, VPS, and systemd setup.
 
 ## Why This Exists
 
-AI coding assistants generate thousands of conversation messages, but none of them provide a way to look back at your history across tools. CCHV solves this.
+AI coding assistants generate thousands of conversation messages, but none of them provide a way to look back at your history across tools. This app solves this.
 
 **Twenty-eight assistants. One viewer.** Switch between Claude Code, GitHub Copilot, Gemini CLI, Antigravity, Codex CLI, Cline (incl. Roo Code & Kilo Code), Cursor, Cursor Agent, Aider, OpenCode, ForgeCode, CodeBuddy Code, Kimi, Kiro, Amazon Q CLI, Continue.dev, PearAI, Goose, Crush, llm, Open Interpreter, Pi, oh-my-pi, Mistral Vibe, Qwen Code, Zed, OpenHands, and Trae sessions seamlessly — compare token usage, search across providers, and analyze your workflow in a single interface.
 
@@ -198,7 +198,7 @@ Antigravity note: the viewer resolves the Antigravity root as `~/.gemini/antigra
 
 | Feature | Description |
 |---------|-------------|
-| **Session Context Menu** | Copy session ID, resume command, file path; delete session, show JSONL file; native rename with search integration |
+| **Session Context Menu** | Copy session ID, resume command, file path; delete session, show JSONL file; native rename with search support |
 | **ANSI Color Rendering** | Terminal output displayed with original ANSI colors |
 | **Multi-language** | English, Korean, Japanese, Chinese (Simplified & Traditional) |
 | **Recent Edits** | View file modification history and restore |
@@ -210,13 +210,13 @@ Antigravity note: the viewer resolves the Antigravity root as `~/.gemini/antigra
 
 ```bash
 brew tap local/tap
-brew install --cask claude-code-history-viewer
+brew install --cask ai-cost-history-hub
 ```
 
 Or install directly with the full cask path:
 
 ```bash
-brew install --cask local/tap/claude-code-history-viewer
+brew install --cask local/tap/ai-cost-history-hub
 ```
 
 If you see `No Cask with this name exists`, run the full cask path command above.
@@ -224,13 +224,13 @@ If you see `No Cask with this name exists`, run the full cask path command above
 To upgrade:
 
 ```bash
-brew upgrade --cask claude-code-history-viewer
+brew upgrade --cask ai-cost-history-hub
 ```
 
 To uninstall:
 
 ```bash
-brew uninstall --cask claude-code-history-viewer
+brew uninstall --cask ai-cost-history-hub
 ```
 
 > **Migrating from manual (.dmg) installation?**
@@ -238,17 +238,17 @@ brew uninstall --cask claude-code-history-viewer
 > Choose **one** installation method — do not mix manual and Homebrew installs.
 > ```bash
 > # Remove the manually installed app first
-> rm -rf "/Applications/Claude Code History Viewer.app"
+> rm -rf "/Applications/AI Cost History Hub.app"
 > # Then install via Homebrew
 > brew tap local/tap
-> brew install --cask claude-code-history-viewer
+> brew install --cask ai-cost-history-hub
 > ```
 
 ## Build from Source
 
 ```bash
-git clone https://github.com/local/claude-code-history-viewer.git
-cd claude-code-history-viewer
+git clone https://github.com/zheyan2517/ai-cost-history-hub.git
+cd ai-cost-history-hub
 
 # Option 1: Using just (recommended)
 brew install just    # or: cargo install just
@@ -274,18 +274,18 @@ Run the viewer as a headless HTTP server — no desktop environment required. Id
 
 ```bash
 # Homebrew (macOS / Linux)
-brew install local/tap/cchv-server
+brew install local/tap/history-hub-server
 
 # Or one-line script
-curl -fsSL https://raw.githubusercontent.com/local/claude-code-history-viewer/main/install-server.sh | sh
+curl -fsSL https://raw.githubusercontent.com/zheyan2517/ai-cost-history-hub/main/install-server.sh | sh
 ```
 
-Both methods install `cchv-server` to your PATH.
+Both methods install `history-hub-server` to your PATH.
 
 ### Start the Server
 
 ```bash
-cchv-server --serve
+history-hub-server --serve
 ```
 
 Output:
@@ -303,12 +303,12 @@ Open the URL in your browser — the token is saved automatically.
 
 | Platform | Asset |
 |----------|-------|
-| Linux x64 | `cchv-server-linux-x64.tar.gz` |
-| Linux ARM64 | `cchv-server-linux-arm64.tar.gz` |
-| macOS ARM | `cchv-server-macos-arm64.tar.gz` |
-| macOS x64 | `cchv-server-macos-x64.tar.gz` |
+| Linux x64 | `history-hub-server-linux-x64.tar.gz` |
+| Linux ARM64 | `history-hub-server-linux-arm64.tar.gz` |
+| macOS ARM | `history-hub-server-macos-arm64.tar.gz` |
+| macOS x64 | `history-hub-server-macos-x64.tar.gz` |
 
-Download from [Releases](https://github.com/local/claude-code-history-viewer/releases).
+Download from [Releases](https://github.com/zheyan2517/ai-cost-history-hub/releases).
 
 **CLI options:**
 
@@ -328,7 +328,7 @@ All `/api/*` endpoints are protected by Bearer token authentication. The token i
 - **Browser access**: Use the `?token=...` URL printed at startup. The token is saved to `localStorage` automatically.
 - **API access**: Include `Authorization: Bearer <token>` header.
 - **Custom token**: `--token my-secret-token` to set your own.
-- **Environment variable**: `CCHV_TOKEN=your-token cchv-server --serve` (useful for systemd/Docker).
+- **Environment variable**: `ACHH_TOKEN=your-token history-hub-server --serve` (useful for systemd/Docker).
 - **Disable**: `--no-auth` to skip authentication entirely (only use on trusted networks).
 
 ### Real-time Updates
@@ -355,9 +355,9 @@ The `docker-compose.yml` mounts `~/.claude`, `~/.codex`, and `~/.local/share/ope
 For persistent server on Linux, use the provided systemd template:
 
 ```bash
-sudo cp contrib/cchv.service /etc/systemd/system/
-sudo systemctl edit --full cchv.service   # Set User= to your username
-sudo systemctl enable --now cchv.service
+sudo cp contrib/history-hub.service /etc/systemd/system/
+sudo systemctl edit --full history-hub.service   # Set User= to your username
+sudo systemctl enable --now history-hub.service
 ```
 
 ### Build from Source (Server Only)
@@ -391,13 +391,13 @@ Launch the app pre-focused on a specific session by passing a `--session` flag:
 
 ```bash
 # Full UUID
-claude-code-history-viewer --session 1265cd74-caa9-472e-b343-c4f44b5cf12c
+ai-cost-history-hub --session 1265cd74-caa9-472e-b343-c4f44b5cf12c
 
 # UUID prefix (8+ hex-or-dash chars, up to 36) — first match wins
-claude-code-history-viewer --session 1265cd74
+ai-cost-history-hub --session 1265cd74
 
 # Equals form also works
-claude-code-history-viewer --session=1265cd74
+ai-cost-history-hub --session=1265cd74
 ```
 
 The viewer scans every known project, navigates to the matching session, and falls back to normal startup if no session matches. Values that are neither hex-or-dash of length 8..36 nor an absolute path are silently ignored.
@@ -440,7 +440,7 @@ Your data stays on your machine.
 |---------|----------|
 | "No Claude data found" | Make sure `~/.claude` exists with conversation history |
 | Performance issues | Large histories may be slow initially — the app uses virtual scrolling |
-| Update problems | If auto-updater fails, download manually from [Releases](https://github.com/local/claude-code-history-viewer/releases) |
+| Update problems | If auto-updater fails, download manually from [Releases](https://github.com/zheyan2517/ai-cost-history-hub/releases) |
 
 ## Contributing
 
@@ -470,6 +470,6 @@ See [Development Commands](CLAUDE.md#development-commands) for the full list of 
 
 If this project helps you, consider giving it a star!
 
-[![Star History Chart](https://api.star-history.com/svg?repos=local/claude-code-history-viewer&type=Date)](https://star-history.com/#local/claude-code-history-viewer&Date)
+[![Star History Chart](https://api.star-history.com/svg?repos=zheyan2517/ai-cost-history-hub&type=Date)](https://star-history.com/#zheyan2517/ai-cost-history-hub&Date)
 
 </div>

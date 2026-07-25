@@ -1,6 +1,6 @@
 # Spec: Right-side Message Navigator (Table of Contents)
 
-> **Issue:** [#36](https://github.com/local/claude-code-history-viewer/issues/36)
+> **Issue:** [#36](https://github.com/zheyan2517/ai-cost-history-hub/issues/36)
 > **Type:** MAJOR — New UI component + store slice + layout change
 > **Status:** Draft
 

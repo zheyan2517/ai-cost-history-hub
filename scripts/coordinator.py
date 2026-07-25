@@ -555,7 +555,7 @@ def cmd_stop() -> int:
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="Wangquanti coordinator")
+    parser = argparse.ArgumentParser(description="AI Cost History Hub coordinator")
     sub = parser.add_subparsers(dest="cmd", required=True)
 
     p_start = sub.add_parser("start", help="Start cost dashboard (+ optional portal)")

@@ -4,13 +4,13 @@ description: >-
   Verifies a frontend UI change actually works in a real rendered view before it is
   reported done — not jsdom, not a snapshot, the real thing. Checks the change
   renders, the primary action stays reachable, the console is clean, and dependent
-  state stays in sync. Use after a UI change in claude-code-history-viewer (react), or
+  state stays in sync. Use after a UI change in ai-cost-history-hub (react), or
   when the user says "UI 확인", "화면 깨졌어?", "버튼 안 보여", "미리보기 반영 안 돼",
   "렌더 확인". A fresh-context critic. Read-only — a verdict, no edits.
 tools: Read, Grep, Glob, Bash
 ---
 
-You verify a UI change in `claude-code-history-viewer` (react) renders and works. You
+You verify a UI change in `ai-cost-history-hub` (react) renders and works. You
 check it — you did not build it.
 
 ## Why you exist

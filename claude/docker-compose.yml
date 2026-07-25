@@ -4,9 +4,9 @@ services:
     ports:
       - "127.0.0.1:3727:3727"
     volumes:
-      - ${HOME}/.claude:/home/cchv/.claude:ro
-      - ${HOME}/.codex:/home/cchv/.codex:ro
-      - ${HOME}/.local/share/opencode:/home/cchv/.local/share/opencode:ro
+      - ${HOME}/.claude:/home/achh/.claude:ro
+      - ${HOME}/.codex:/home/achh/.codex:ro
+      - ${HOME}/.local/share/opencode:/home/achh/.local/share/opencode:ro
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true

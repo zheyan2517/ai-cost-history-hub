@@ -31,7 +31,7 @@ jobs:
             --model claude-sonnet-4-6
             --max-turns 20
           prompt: |
-            You are maintaining claude-code-history-viewer. Produce a daily open-PR
+            You are maintaining ai-cost-history-hub. Produce a daily open-PR
             health digest for the solo maintainer.
 
             1. List open PRs:  gh pr list --state open --json number,title,author,createdAt,updatedAt,additions,deletions,mergeable,labels,reviewDecision

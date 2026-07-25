@@ -1,4 +1,4 @@
-//! Performance benchmarks for Claude Code History Viewer
+//! Performance benchmarks for AI Cost History Hub
 //!
 //! Run with: `cargo bench --bench performance`
 //! Compare baselines: `cargo bench --bench performance -- --save-baseline NAME`

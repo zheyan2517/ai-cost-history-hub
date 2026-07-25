@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Claude Code History Viewer",
+  "productName": "AI Cost History Hub",
   "version": "1.22.0",
-  "identifier": "com.claude.history-viewer",
+  "identifier": "com.aicosthistoryhub.app",
   "build": {
     "frontendDist": "../dist",
     "devUrl": "http://localhost:5173",
@@ -43,7 +43,7 @@
     "updater": {
       "active": true,
       "endpoints": [
-        "https://github.com/local/claude-code-history-viewer/releases/latest/download/latest.json"
+        "https://github.com/zheyan2517/ai-cost-history-hub/releases/latest/download/latest.json"
       ],
       "dialog": false,
       "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDg0RUExOEVGNTlEQzFDRDMKUldUVEhOeFo3eGpxaEZGYkZYcmFKTERPdys5dXh2c1Z5ZU1uTDREZ3RyWDF1bHhSc1JOeW05MzUK"

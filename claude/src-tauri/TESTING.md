@@ -1,6 +1,6 @@
 # Rust Testing Guide
 
-This document describes the world-class testing infrastructure for the Claude Code History Viewer Rust backend.
+This document describes the world-class testing infrastructure for the AI Cost History Hub Rust backend.
 
 ## Quick Start
 
@@ -212,7 +212,7 @@ cd src-tauri && cargo llvm-cov nextest --lcov --output-path lcov.info
 | Core logic | 90%+ | Message parsing, stats |
 | Security | 100% | Path validation, input sanitization |
 
-## CI/CD Integration
+## CI/CD setup
 
 The GitHub Actions workflow (`.github/workflows/rust-tests.yml`) runs:
 

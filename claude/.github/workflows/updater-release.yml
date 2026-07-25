@@ -151,7 +151,7 @@ jobs:
           $exe = $candidates[0]
           Write-Output "Found exe: $($exe.FullName)"
 
-          $zipName = "Claude.Code.History.Viewer_${version}_x64-portable.zip"
+          $zipName = "AI.Cost.History.Hub_${version}_x64-portable.zip"
           Compress-Archive -Path $exe.FullName -DestinationPath $zipName
 
           if (-not (Test-Path $zipName)) {
@@ -181,7 +181,7 @@ jobs:
       # EGL_BAD_ALLOC. Removing these GPU-driver-dependent libs forces the system's
       # native EGL stack to be used, which is compatible with the system's WebKitGPUProcess.
       #
-      # See: https://github.com/local/claude-code-history-viewer/issues/186
+      # See: https://github.com/zheyan2517/ai-cost-history-hub/issues/186
       # See: https://github.com/tauri-apps/tauri/issues/11988
       - name: Post-process AppImage (fix EGL crash on Arch Linux)
         if: matrix.platform == 'ubuntu-22.04'
@@ -398,7 +398,7 @@ jobs:
             const releaseId = ${{ needs.create-release.outputs.release_id }};
             const tapOwner = 'local';
             const tapRepo = 'homebrew-tap';
-            const caskPath = 'Casks/claude-code-history-viewer.rb';
+            const caskPath = 'Casks/ai-cost-history-hub.rb';
 
             if (!process.env.HOMEBREW_TAP_TOKEN) {
               throw new Error('HOMEBREW_TAP_TOKEN is required to publish releases safely.');
@@ -414,7 +414,7 @@ jobs:
               Authorization: `Bearer ${process.env.HOMEBREW_TAP_TOKEN}`,
               Accept: 'application/vnd.github+json',
               'X-GitHub-Api-Version': '2022-11-28',
-              'User-Agent': 'claude-code-history-viewer-release-workflow'
+              'User-Agent': 'ai-cost-history-hub-release-workflow'
             };
 
             const tapRequest = async (path, options = {}) => {
@@ -463,7 +463,7 @@ jobs:
               const fs = require('fs');
               const os = require('os');
               const path = require('path');
-              const tmpDmg = path.join(os.tmpdir(), `cchv-${version}-${Date.now()}.dmg`);
+              const tmpDmg = path.join(os.tmpdir(), `achh-${version}-${Date.now()}.dmg`);
 
               try {
                 // GitHub API로 asset 다운로드 (draft release에서도 작동)
@@ -510,7 +510,7 @@ jobs:
               const updateResult = await tapRequest(`/contents/${encodedCaskPath}`, {
                 method: 'PUT',
                 body: {
-                  message: `chore: update claude-code-history-viewer to v${version}`,
+                  message: `chore: update ai-cost-history-hub to v${version}`,
                   content: Buffer.from(nextContent).toString('base64'),
                   sha: caskFile.sha,
                   branch: 'main',

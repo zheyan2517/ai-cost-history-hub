@@ -1,8 +1,8 @@
 #!/bin/sh
-# install-server.sh — One-line installer for cchv-server (Claude Code History Viewer)
+# install-server.sh — One-line installer for history-hub-server (AI Cost History Hub)
 #
 # Usage:
-#   curl -fsSL https://raw.githubusercontent.com/local/claude-code-history-viewer/main/install-server.sh | sh
+#   curl -fsSL https://raw.githubusercontent.com/zheyan2517/ai-cost-history-hub/main/install-server.sh | sh
 #
 # Environment variables:
 #   INSTALL_DIR  — Installation directory (default: /usr/local/bin)
@@ -10,8 +10,8 @@
 
 set -e
 
-REPO="local/claude-code-history-viewer"
-BINARY_NAME="cchv-server"
+REPO="zheyan2517/ai-cost-history-hub"
+BINARY_NAME="history-hub-server"
 INSTALL_DIR="${INSTALL_DIR:-/usr/local/bin}"
 
 # ---------------------------------------------------------------------------
@@ -73,7 +73,7 @@ resolve_version() {
 # ---------------------------------------------------------------------------
 
 install() {
-    ARTIFACT="cchv-server-${PLATFORM}.tar.gz"
+    ARTIFACT="history-hub-server-${PLATFORM}.tar.gz"
     CHECKSUM_FILE="CHECKSUMS.sha256"
     URL="https://github.com/${REPO}/releases/download/${TAG}/${ARTIFACT}"
     CHECKSUM_URL="https://github.com/${REPO}/releases/download/${TAG}/${CHECKSUM_FILE}"
@@ -126,7 +126,7 @@ install() {
 # ---------------------------------------------------------------------------
 
 main() {
-    printf '\n\033[1m  Claude Code History Viewer — Server Installer\033[0m\n\n'
+    printf '\n\033[1m  AI Cost History Hub — Server Installer\033[0m\n\n'
 
     need_cmd curl
     need_cmd tar
@@ -146,7 +146,7 @@ main() {
     printf '    --token <value>    Custom auth token\n'
     printf '    --no-auth          Disable authentication\n'
     printf '\n'
-    info "systemd service template: https://github.com/${REPO}/blob/main/contrib/cchv.service"
+    info "systemd service template: https://github.com/${REPO}/blob/main/contrib/history-hub.service"
     printf '\n'
 }
 

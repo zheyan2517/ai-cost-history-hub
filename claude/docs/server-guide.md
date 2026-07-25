@@ -1,6 +1,6 @@
 # Server Mode Guide
 
-Run Claude Code History Viewer as a web server — access your conversation history from any browser, anywhere.
+Run AI Cost History Hub as a web server — access your conversation history from any browser, anywhere.
 
 **Languages**: [English](server-guide.md) | [한국어](server-guide.ko.md)
 
@@ -58,12 +58,12 @@ sudo apt update && sudo apt install -y cloudflared
 
 ```bash
 # Homebrew (recommended)
-brew install local/tap/cchv-server
-cchv-server --serve
+brew install local/tap/history-hub-server
+history-hub-server --serve
 
 # Or build from source
-git clone https://github.com/local/claude-code-history-viewer.git
-cd claude-code-history-viewer
+git clone https://github.com/zheyan2517/ai-cost-history-hub.git
+cd ai-cost-history-hub
 just setup
 just serve-build-run
 ```
@@ -135,17 +135,17 @@ ssh root@203.0.113.50
 # (Replace with your actual IP)
 ```
 
-### Step 3: Install cchv-server
+### Step 3: Install history-hub-server
 
 ```bash
 # Option A: Homebrew (macOS / Linux)
-brew install local/tap/cchv-server
+brew install local/tap/history-hub-server
 
 # Option B: One-line install script
-curl -fsSL https://raw.githubusercontent.com/local/claude-code-history-viewer/main/install-server.sh | sh
+curl -fsSL https://raw.githubusercontent.com/zheyan2517/ai-cost-history-hub/main/install-server.sh | sh
 ```
 
-Both methods auto-detect your OS/architecture and install `cchv-server` to your PATH.
+Both methods auto-detect your OS/architecture and install `history-hub-server` to your PATH.
 
 ### Step 4: Copy your Claude data
 
@@ -176,7 +176,7 @@ sudo ufw enable
 ### Step 6: Start the server
 
 ```bash
-cchv-server --serve
+history-hub-server --serve
 ```
 
 Output:
@@ -195,17 +195,17 @@ The server stops when you close SSH. To keep it running permanently:
 
 ```bash
 # Copy the service file
-sudo cp /usr/local/bin/cchv.service /etc/systemd/system/ 2>/dev/null || \
-curl -fsSL https://raw.githubusercontent.com/local/claude-code-history-viewer/main/contrib/cchv.service | sudo tee /etc/systemd/system/cchv.service > /dev/null
+sudo cp /usr/local/bin/history-hub.service /etc/systemd/system/ 2>/dev/null || \
+curl -fsSL https://raw.githubusercontent.com/zheyan2517/ai-cost-history-hub/main/contrib/history-hub.service | sudo tee /etc/systemd/system/history-hub.service > /dev/null
 
 # Edit — change YOUR_USERNAME_HERE to your actual username
-sudo systemctl edit --full cchv.service
+sudo systemctl edit --full history-hub.service
 
 # Enable and start
-sudo systemctl enable --now cchv.service
+sudo systemctl enable --now history-hub.service
 
 # Check status
-sudo systemctl status cchv.service
+sudo systemctl status history-hub.service
 ```
 
 Now the server starts automatically on boot.
@@ -249,8 +249,8 @@ ssh root@203.0.113.50
 **2. Clone and start**
 
 ```bash
-git clone https://github.com/local/claude-code-history-viewer.git
-cd claude-code-history-viewer
+git clone https://github.com/zheyan2517/ai-cost-history-hub.git
+cd ai-cost-history-hub
 docker compose up -d
 ```
 
@@ -295,8 +295,8 @@ For contributors, fork maintainers, or custom builds.
 ### Steps
 
 ```bash
-git clone https://github.com/local/claude-code-history-viewer.git
-cd claude-code-history-viewer
+git clone https://github.com/zheyan2517/ai-cost-history-hub.git
+cd ai-cost-history-hub
 
 # Install dependencies
 just setup
@@ -305,18 +305,18 @@ just setup
 just serve-build
 ```
 
-The binary is at `src-tauri/target/release/claude-code-history-viewer`.
+The binary is at `src-tauri/target/release/ai-cost-history-hub`.
 
 ### Deploy to VPS
 
 ```bash
 # Copy binary to VPS
-scp src-tauri/target/release/claude-code-history-viewer root@203.0.113.50:/usr/local/bin/cchv-server
+scp src-tauri/target/release/ai-cost-history-hub root@203.0.113.50:/usr/local/bin/history-hub-server
 
 # SSH in and start
 ssh root@203.0.113.50
-chmod +x /usr/local/bin/cchv-server
-cchv-server --serve
+chmod +x /usr/local/bin/history-hub-server
+history-hub-server --serve
 ```
 
 ### Development mode
@@ -375,7 +375,7 @@ GET /health
 
 | Cause | Fix |
 |-------|-----|
-| Server not running | Check `systemctl status cchv.service` or start manually |
+| Server not running | Check `systemctl status history-hub.service` or start manually |
 | Wrong IP address | Use your VPS's **public IP**, not `0.0.0.0` or `192.168.x.x` |
 | Firewall blocking port | `sudo ufw allow 3727/tcp` and check VPS provider's security group |
 | Port already in use | `lsof -ti :3727 \| xargs kill` or use `--port 3728` |

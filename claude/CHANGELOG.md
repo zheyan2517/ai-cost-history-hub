@@ -237,13 +237,13 @@ Patch release fixing conversation loading for several assistants added in 1.17.0
 - Apply custom Claude directory selection instantly without restart (#255)
 - Bump session list fixed row height to fit 2-line wrapped names (#298)
 - Multi-pass scroll to correct TOC click landing position (#303)
-- Unified argv parser shared between desktop and `cchv-server` (#271)
+- Unified argv parser shared between desktop and `history-hub-server` (#271)
 
 ### Fixed
 - Resolve infinite loading and rendering issues for sub-agent sessions (#258, #264)
 - Fall back to estimated cost when `costUSD` is absent in message metadata (#301)
 - Boot correctly for setups without `~/.claude` (other-provider-only configurations) (#300)
-- Bound graceful shutdown so `cchv-server` exits on Ctrl+C (#297)
+- Bound graceful shutdown so `history-hub-server` exits on Ctrl+C (#297)
 - Preserve bubble timestamps in search results (#273)
 - Dedupe token usage across split assistant turn rows (#283, #289)
 
@@ -256,7 +256,7 @@ Patch release fixing conversation loading for several assistants added in 1.17.0
 ### Added
 - **Auto-refresh Sessions**: Session list auto-refreshes when underlying files change; auto-scroll to bottom on new messages (#242)
 - **Project Panel Search & Horizontal Scrollbar**: Search box plus horizontal scrollbar for long project names (#248)
-- **Session Right-click Context Menu**: Copy session ID, resume command, file path; delete session; show JSONL file; native rename with search integration (#251)
+- **Session Right-click Context Menu**: Copy session ID, resume command, file path; delete session; show JSONL file; native rename with search support (#251)
 - **Sub-agent Conversation History**: View sub-agent (sidechain) conversation history (#252)
 - **Custom Claude Config Directories**: Support directories outside `~/.claude` for users with non-default configurations (#254)
 
@@ -290,7 +290,7 @@ Patch release fixing conversation loading for several assistants added in 1.17.0
   - SSE real-time file watcher for live session updates
   - Single-binary deployment with embedded frontend via rust-embed
   - Docker and docker-compose support
-  - Homebrew formula (`cchv-server`) with auto-update CI
+  - Homebrew formula (`history-hub-server`) with auto-update CI
   - Comprehensive server guides (EN + KO)
 - **Screenshot Capture**: Long screenshot with range selection, preview modal, and explorer-style multi-selection
 - **Archive Management**: Create, browse, rename, delete, and export session archives
@@ -386,7 +386,7 @@ Patch release fixing conversation loading for several assistants added in 1.17.0
 
 ### Added
 - Multi-language support: 5 languages (Korean, English, Japanese, Simplified/Traditional Chinese)
-- Feedback system: Category-based feedback submission with GitHub integration
+- Feedback system: Category-based feedback submission with GitHub support
 - Language selection menu: Real-time language switching in settings
 
 ### Changed

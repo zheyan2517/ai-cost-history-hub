@@ -638,7 +638,7 @@ mod tests {
         lines.push(
             serde_json::json!({
                 "type": "user",
-                "cwd": "/tmp/cchv-empty-line-test",
+                "cwd": "/tmp/achh-empty-line-test",
             })
             .to_string(),
         );
@@ -651,7 +651,7 @@ mod tests {
         let file_path = temp_dir.path().join("session.jsonl");
         assert_eq!(
             extract_cwd_from_session_file(&file_path),
-            Some("/tmp/cchv-empty-line-test".to_string())
+            Some("/tmp/achh-empty-line-test".to_string())
         );
     }
 

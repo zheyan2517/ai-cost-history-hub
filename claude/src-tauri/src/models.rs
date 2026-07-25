@@ -1,4 +1,4 @@
-//! Data models for Claude Code History Viewer
+//! Data models for AI Cost History Hub
 //!
 //! This module contains all the data structures used throughout the application.
 

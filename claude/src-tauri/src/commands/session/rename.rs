@@ -139,7 +139,7 @@ fn rename_claude_session_file(
 
     // Also append a modern `custom-title` event so Claude Code 2.x reflects the
     // rename in `claude --resume`; the legacy line above keeps older clients and
-    // CCHV's own summary logic working.
+    // app's own summary logic working.
     if let Some(session_id) = &context.session_id {
         let custom_title_event = build_claude_custom_title_event(session_id, &normalized_title);
         let custom_title_line = serde_json::to_string(&custom_title_event)
@@ -683,7 +683,7 @@ fn is_claude_rename_event_line(line: &str) -> bool {
 
 /// Extract the title from a modern `custom-title` event.
 /// Claude Code 2.x drives the `claude --resume` picker from these events, so
-/// CCHV writes one alongside the legacy `Session renamed to:` output.
+/// app writes one alongside the legacy `Session renamed to:` output.
 fn extract_custom_title_from_value(json: &Value) -> Option<String> {
     if json.get("type").and_then(Value::as_str) != Some("custom-title") {
         return None;
@@ -706,7 +706,7 @@ fn build_claude_custom_title_event(session_id: &str, new_title: &str) -> Value {
 }
 
 /// True if `line` is a `custom-title` event whose title equals `target`.
-/// Used by reset to remove the `custom-title` CCHV appended for a given name
+/// Used by reset to remove the `custom-title` app appended for a given name
 /// while leaving unrelated (older/CLI-set) titles intact.
 fn is_custom_title_line_for(line: &str, target: &str) -> bool {
     serde_json::from_str::<Value>(line)
@@ -984,7 +984,7 @@ mod tests {
             "isMeta": false,
             "userType": "external",
             "entrypoint": "cli",
-            "cwd": "/tmp/cchv-rename-test",
+            "cwd": "/tmp/achh-rename-test",
             "sessionId": session_id,
             "version": "2.1.169",
             "gitBranch": "main",
@@ -1006,7 +1006,7 @@ mod tests {
             "isMeta": false,
             "userType": "external",
             "entrypoint": "cli",
-            "cwd": "/tmp/cchv-rename-test",
+            "cwd": "/tmp/achh-rename-test",
             "sessionId": session_id,
             "version": "2.1.169",
             "gitBranch": "main",
@@ -1027,7 +1027,7 @@ mod tests {
             "isMeta": false,
             "userType": "external",
             "entrypoint": "cli",
-            "cwd": "/tmp/cchv-rename-test",
+            "cwd": "/tmp/achh-rename-test",
             "sessionId": session_id,
             "version": "2.1.169",
             "gitBranch": "main",
@@ -1157,7 +1157,7 @@ mod tests {
     #[tokio::test]
     async fn test_reset_removes_custom_title_for_reset_name() {
         // A full rename cycle (legacy + custom-title) followed by a reset must
-        // leave no trace of the name, in the JSONL or in CCHV's summary.
+        // leave no trace of the name, in the JSONL or in app's summary.
         let temp_dir = tempfile::TempDir::new().unwrap();
         let file_path = temp_dir.path().join("session-ct.jsonl");
         let session_id = "session-ct";
@@ -1193,7 +1193,7 @@ mod tests {
     #[tokio::test]
     async fn test_reset_preserves_unrelated_custom_title() {
         // An older custom-title (e.g. one the CLI set) must survive a reset that
-        // targets a different, CCHV-applied name — the picker reverts to it.
+        // targets a different, app-applied name — the picker reverts to it.
         let temp_dir = tempfile::TempDir::new().unwrap();
         let file_path = temp_dir.path().join("session-keep.jsonl");
         let session_id = "session-keep";
@@ -1205,13 +1205,13 @@ mod tests {
         );
         fs::write(&file_path, content).unwrap();
 
-        // CCHV renames on top of the CLI-set title, then resets its own rename.
-        rename_claude_session_file(file_path.to_str().unwrap(), "cchv-name").unwrap();
+        // app renames on top of the CLI-set title, then resets its own rename.
+        rename_claude_session_file(file_path.to_str().unwrap(), "custom-title-name").unwrap();
         let result = reset_claude_session_file(file_path.to_str().unwrap()).unwrap();
-        assert_eq!(result.previous_title, "cchv-name");
+        assert_eq!(result.previous_title, "custom-title-name");
 
         let after_reset = fs::read_to_string(&file_path).unwrap();
-        assert!(!after_reset.contains("cchv-name"));
+        assert!(!after_reset.contains("custom-title-name"));
         assert!(
             after_reset.contains("cli-set-name"),
             "an unrelated (older) custom-title must be preserved"

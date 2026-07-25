@@ -124,9 +124,9 @@ fn is_uuid_like(value: &str) -> bool {
 ///
 /// Supported shapes:
 /// - `file:///abs/path/session.jsonl` — becomes a `Path` hint
-/// - `claude-code-history-viewer://session/<uuid>` — becomes a `Uuid` hint
-/// - `claude-code-history-viewer://session-folder/<name>` — becomes a `Folder` hint
-/// - `claude-code-history-viewer://session-title/<url-encoded-text>` — becomes a `Title` hint
+/// - `ai-cost-history-hub://session/<uuid>` — becomes a `Uuid` hint
+/// - `ai-cost-history-hub://session-folder/<name>` — becomes a `Folder` hint
+/// - `ai-cost-history-hub://session-title/<url-encoded-text>` — becomes a `Title` hint
 ///
 /// Any malformed URL yields `None`; the caller (the `RunEvent::Opened` handler)
 /// must never panic because the Apple Events delivery runs on the UI thread.
@@ -463,7 +463,7 @@ mod tests {
     #[test]
     fn parses_custom_scheme_uuid_url() {
         let hint = parse_session_hint_from_url(&url(
-            "claude-code-history-viewer://session/1265cd74-caa9-472e-b343-c4f44b5cf12c",
+            "ai-cost-history-hub://session/1265cd74-caa9-472e-b343-c4f44b5cf12c",
         ))
         .expect("hint");
         assert_eq!(hint.kind, SessionHintKind::Uuid);
@@ -473,7 +473,7 @@ mod tests {
     #[test]
     fn parses_custom_scheme_folder_url() {
         let hint =
-            parse_session_hint_from_url(&url("claude-code-history-viewer://session-folder/demo"))
+            parse_session_hint_from_url(&url("ai-cost-history-hub://session-folder/demo"))
                 .expect("hint");
         assert_eq!(hint.kind, SessionHintKind::Folder);
         assert_eq!(hint.value, "demo");
@@ -482,7 +482,7 @@ mod tests {
     #[test]
     fn parses_custom_scheme_title_with_spaces() {
         let hint = parse_session_hint_from_url(&url(
-            "claude-code-history-viewer://session-title/auth%20bug",
+            "ai-cost-history-hub://session-title/auth%20bug",
         ))
         .expect("hint");
         assert_eq!(hint.kind, SessionHintKind::Title);
@@ -492,20 +492,20 @@ mod tests {
     #[test]
     fn rejects_custom_scheme_with_bad_uuid_host() {
         let hint =
-            parse_session_hint_from_url(&url("claude-code-history-viewer://session/not-a-uuid"));
+            parse_session_hint_from_url(&url("ai-cost-history-hub://session/not-a-uuid"));
         assert!(hint.is_none());
     }
 
     #[test]
     fn rejects_custom_scheme_with_unknown_host() {
-        let hint = parse_session_hint_from_url(&url("claude-code-history-viewer://unknown/demo"));
+        let hint = parse_session_hint_from_url(&url("ai-cost-history-hub://unknown/demo"));
         assert!(hint.is_none());
     }
 
     #[test]
     fn rejects_custom_scheme_with_empty_path() {
         let hint =
-            parse_session_hint_from_url(&url("claude-code-history-viewer://session-folder/"));
+            parse_session_hint_from_url(&url("ai-cost-history-hub://session-folder/"));
         assert!(hint.is_none());
     }
 
@@ -520,7 +520,7 @@ mod tests {
         // "한글 제목" percent-encoded. If percent_decode treats bytes as chars
         // instead of decoding into a Vec<u8> + from_utf8, the result is mojibake.
         let hint = parse_session_hint_from_url(&url(
-            "claude-code-history-viewer://session-title/%ED%95%9C%EA%B8%80%20%EC%A0%9C%EB%AA%A9",
+            "ai-cost-history-hub://session-title/%ED%95%9C%EA%B8%80%20%EC%A0%9C%EB%AA%A9",
         ))
         .expect("hint");
         assert_eq!(hint.kind, SessionHintKind::Title);
@@ -532,7 +532,7 @@ mod tests {
         // A raw `+` in a URL path segment must stay `+`, not become a space.
         // `+` → space is form-urlencoded semantics, not path semantics.
         let hint = parse_session_hint_from_url(&url(
-            "claude-code-history-viewer://session-title/C%2B%2B%20bug",
+            "ai-cost-history-hub://session-title/C%2B%2B%20bug",
         ))
         .expect("hint");
         assert_eq!(hint.value, "C++ bug");
@@ -542,7 +542,7 @@ mod tests {
     fn title_plus_is_not_decoded_to_space() {
         // Explicit bare `+` (not `%2B`) stays literal.
         let hint =
-            parse_session_hint_from_url(&url("claude-code-history-viewer://session-title/one+two"))
+            parse_session_hint_from_url(&url("ai-cost-history-hub://session-title/one+two"))
                 .expect("hint");
         assert_eq!(hint.value, "one+two");
     }

@@ -11,7 +11,7 @@ tools: Read, Glob, Grep, Bash
 model: sonnet
 ---
 
-You review provider-addition PRs for **claude-code-history-viewer**. New
+You review provider-addition PRs for **ai-cost-history-hub**. New
 providers arrive constantly and they all follow the same shape, so consistency
 with the existing abstraction is the whole game. ~5 providers were added by
 external PRs recently and they tend to copy each other — including each other's

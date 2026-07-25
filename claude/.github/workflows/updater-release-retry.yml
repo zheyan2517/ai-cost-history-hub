@@ -116,7 +116,7 @@ jobs:
             const releaseId = Number.parseInt(releaseIdRaw, 10);
             const tapOwner = 'local';
             const tapRepo = 'homebrew-tap';
-            const caskPath = 'Casks/claude-code-history-viewer.rb';
+            const caskPath = 'Casks/ai-cost-history-hub.rb';
 
             if (!Number.isFinite(releaseId)) {
               throw new Error(`Invalid release_id: ${releaseIdRaw}`);
@@ -135,7 +135,7 @@ jobs:
               Authorization: `Bearer ${process.env.HOMEBREW_TAP_TOKEN}`,
               Accept: 'application/vnd.github+json',
               'X-GitHub-Api-Version': '2022-11-28',
-              'User-Agent': 'claude-code-history-viewer-release-workflow'
+              'User-Agent': 'ai-cost-history-hub-release-workflow'
             };
 
             const tapRequest = async (path, options = {}) => {
@@ -184,7 +184,7 @@ jobs:
               const fs = require('fs');
               const os = require('os');
               const path = require('path');
-              const tmpDmg = path.join(os.tmpdir(), `cchv-${version}-${Date.now()}.dmg`);
+              const tmpDmg = path.join(os.tmpdir(), `achh-${version}-${Date.now()}.dmg`);
 
               try {
                 const { data } = await github.rest.repos.getReleaseAsset({
@@ -230,7 +230,7 @@ jobs:
               const updateResult = await tapRequest(`/contents/${encodedCaskPath}`, {
                 method: 'PUT',
                 body: {
-                  message: `chore: update claude-code-history-viewer to v${version}`,
+                  message: `chore: update ai-cost-history-hub to v${version}`,
                   content: Buffer.from(nextContent).toString('base64'),
                   sha: caskFile.sha,
                   branch: 'main',

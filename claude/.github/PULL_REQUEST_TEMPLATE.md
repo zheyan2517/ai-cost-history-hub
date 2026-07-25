@@ -1,5 +1,5 @@
 <!--
-Thanks for contributing to claude-code-history-viewer! 🙏
+Thanks for contributing to ai-cost-history-hub! 🙏
 Please target the `develop` branch (NOT `main` — main is release-only).
 -->
 

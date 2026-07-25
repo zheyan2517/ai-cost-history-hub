@@ -9,7 +9,7 @@
 Claude Code 的会话 JSONL 里每条记录都带一个顶层 `entrypoint` 字段，取值
 `cli` / `claude-vscode` / `claude-desktop`，标识这条记录是从哪个客户端产生的。
 
-上游的 `claude-code-history-viewer` 完全没有解析这个字段——`RawLogEntry`、
+上游的 `ai-cost-history-hub` 完全没有解析这个字段——`RawLogEntry`、
 `SessionMetadataEntry`、`ClaudeSession` 里都没有它。因此它能读到 VS Code 插件
 产生的会话（物理上就在同一批 jsonl 里），但**无法把它们识别 / 筛选出来**。
 本次改造补上这个缺口。

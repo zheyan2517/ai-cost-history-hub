@@ -720,7 +720,7 @@ find ~/.claude/projects -name "*.jsonl" -exec sed -i '' 's/^\(\[.*\] \)//' {} \;
 
 - [Claude Code Documentation](https://docs.anthropic.com/claude-code)
 - [Tauri File System API](https://tauri.app/v1/api/js/fs)
-- [Issue #83](https://github.com/local/claude-code-history-viewer/issues/83)
+- [Issue #83](https://github.com/zheyan2517/ai-cost-history-hub/issues/83)
 
 ---
 

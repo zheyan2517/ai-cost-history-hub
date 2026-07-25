@@ -21,7 +21,7 @@ never as a mandatory first step.
 
 ## Project Overview
 
-Claude Code History Viewer is a Tauri-based desktop application that allows users to browse and analyze conversation history from multiple AI coding assistants: Claude Code (`~/.claude`), Codex CLI (`~/.codex`), OpenCode (`~/.local/share/opencode/`), GitHub Copilot CLI (`~/.copilot/session-state/`), and VS Code Copilot Chat (`<UserData>/workspaceStorage/<hash>/chatSessions/`).
+AI Cost History Hub is a Tauri-based desktop application that allows users to browse and analyze conversation history from multiple AI coding assistants: Claude Code (`~/.claude`), Codex CLI (`~/.codex`), OpenCode (`~/.local/share/opencode/`), GitHub Copilot CLI (`~/.copilot/session-state/`), and VS Code Copilot Chat (`<UserData>/workspaceStorage/<hash>/chatSessions/`).
 
 ## Development Commands
 
@@ -79,7 +79,7 @@ mattpocock 스킬(`/triage`, `/to-issues`, `/diagnose`, `/improve-codebase-archi
 
 ### Issue tracker
 
-GitHub Issues at `local/claude-code-history-viewer`. See `docs/agents/issue-tracker.md`.
+GitHub Issues at `zheyan2517/ai-cost-history-hub`. See `docs/agents/issue-tracker.md`.
 
 ### Triage labels
 
@@ -262,7 +262,7 @@ VS Code Copilot:    <UserData>/workspaceStorage/<hash>/chatSessions/*.jsonl     
   - `ProjectTree.tsx` - Shows project/session hierarchy
   - `contentRenderer.tsx` - Handles rendering of different content types
   - `messageRenderer.tsx` - Renders tool use, tool results, and message content
-- **API Integration**: Frontend communicates with Rust backend via Tauri's IPC commands
+- **API bridge**: Frontend communicates with Rust backend via Tauri's IPC commands
 - **Virtual Scrolling**: Uses react-window for efficient rendering of large message lists
 
 ### Backend (Rust + Tauri)
@@ -319,7 +319,7 @@ src/i18n/
 ```json
 // locales/en/common.json
 {
-  "common.appName": "Claude Code History Viewer",
+  "common.appName": "AI Cost History Hub",
   "common.loading": "Loading...",
   "common.cancel": "Cancel"
 }

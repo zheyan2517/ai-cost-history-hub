@@ -1,6 +1,6 @@
 # Implementation Spec: Session List Sorting and Search (#80)
 
-> **Issue:** [#80 - 左侧列表建议增加筛选搜索](https://github.com/local/claude-code-history-viewer/issues/80)  
+> **Issue:** [#80 - 左侧列表建议增加筛选搜索](https://github.com/zheyan2517/ai-cost-history-hub/issues/80)  
 > **Status:** Draft  
 > **Classification:** MINOR — UI enhancement to existing sidebar component
 

@@ -125,7 +125,7 @@ fn run_tauri() {
     // The CI pipeline removes conflicting EGL libs from the AppImage (primary fix).
     // This env var is defense-in-depth for edge cases (NVIDIA driver quirks, etc.).
     //
-    // See: https://github.com/local/claude-code-history-viewer/issues/186
+    // See: https://github.com/zheyan2517/ai-cost-history-hub/issues/186
     // See: https://github.com/tauri-apps/tauri/issues/11988
     // Note: std::env::set_var becomes unsafe in Rust edition 2024.
     // This is safe here because no threads exist yet at this point in startup.

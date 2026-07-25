@@ -155,7 +155,7 @@ export const Header = ({ analyticsActions, analyticsComputed, updater }: HeaderP
       <div className="relative z-10 flex items-center gap-2.5 min-w-0 pointer-events-none">
         <img
           src={getAssetPath("app-icon.png")}
-          alt="Claude Code History"
+          alt="AI Cost History Hub"
           className="w-6 h-6 hidden md:block"
         />
         <div className="flex flex-col min-w-0">
@@ -368,7 +368,7 @@ export const Header = ({ analyticsActions, analyticsComputed, updater }: HeaderP
             }}
           />
 
-          {/* Agent Cost Dashboard (Python sidecar) — desktop only */}
+          {/* Cost Dashboard (Python sidecar) — desktop only */}
           {canUseCostDashboard && (
             <NavButton
               icon={isOpeningCostDashboard ? Loader2 : Wallet}

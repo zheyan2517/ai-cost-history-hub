@@ -21,17 +21,17 @@ jobs:
         include:
           - platform: ubuntu-22.04
             target: x86_64-unknown-linux-gnu
-            artifact: cchv-server-linux-x64
+            artifact: history-hub-server-linux-x64
           - platform: ubuntu-22.04
             target: aarch64-unknown-linux-gnu
-            artifact: cchv-server-linux-arm64
+            artifact: history-hub-server-linux-arm64
             cross: true
           - platform: macos-14
             target: aarch64-apple-darwin
-            artifact: cchv-server-macos-arm64
+            artifact: history-hub-server-macos-arm64
           - platform: macos-14
             target: x86_64-apple-darwin
-            artifact: cchv-server-macos-x64
+            artifact: history-hub-server-macos-x64
 
     runs-on: ${{ matrix.platform }}
 
@@ -99,8 +99,8 @@ jobs:
       - name: Package single binary
         run: |
           mkdir -p release
-          cp src-tauri/target/${{ matrix.target }}/release/claude-code-history-viewer release/cchv-server
-          cd release && tar czf ../${{ matrix.artifact }}.tar.gz cchv-server
+          cp src-tauri/target/${{ matrix.target }}/release/ai-cost-history-hub release/history-hub-server
+          cd release && tar czf ../${{ matrix.artifact }}.tar.gz history-hub-server
 
       - name: Wait for release to be published
         run: |
@@ -136,9 +136,9 @@ jobs:
 
       - name: Download release assets and compute SHA256
         run: |
-          BASE="https://github.com/local/claude-code-history-viewer/releases/download/${GITHUB_REF_NAME}"
+          BASE="https://github.com/zheyan2517/ai-cost-history-hub/releases/download/${GITHUB_REF_NAME}"
           : > CHECKSUMS.sha256
-          for asset in cchv-server-macos-arm64 cchv-server-macos-x64 cchv-server-linux-arm64 cchv-server-linux-x64; do
+          for asset in history-hub-server-macos-arm64 history-hub-server-macos-x64 history-hub-server-linux-arm64 history-hub-server-linux-x64; do
             curl -fsSL -o "${asset}.tar.gz" "${BASE}/${asset}.tar.gz"
             sha=$(sha256sum "${asset}.tar.gz" | cut -d' ' -f1)
             printf "%s  %s\n" "${sha}" "${asset}.tar.gz" >> CHECKSUMS.sha256
@@ -158,23 +158,23 @@ jobs:
         run: |
 
           # Fetch current formula
-          gh api repos/local/homebrew-tap/contents/Formula/cchv-server.rb \
-            --jq '.content' | base64 -d > cchv-server.rb
+          gh api repos/local/homebrew-tap/contents/Formula/history-hub-server.rb \
+            --jq '.content' | base64 -d > history-hub-server.rb
 
-          FILE_SHA=$(gh api repos/local/homebrew-tap/contents/Formula/cchv-server.rb --jq '.sha')
+          FILE_SHA=$(gh api repos/local/homebrew-tap/contents/Formula/history-hub-server.rb --jq '.sha')
 
           # Replace version and SHA256 placeholders/values
-          sed -i "s/version \".*\"/version \"${VERSION}\"/" cchv-server.rb
-          sed -i "s/sha256 \".*_MACOS_ARM64\"/sha256 \"${cchv_server_macos_arm64}\"/" cchv-server.rb
-          sed -i "s/sha256 \".*_MACOS_X64\"/sha256 \"${cchv_server_macos_x64}\"/" cchv-server.rb
-          sed -i "s/sha256 \".*_LINUX_ARM64\"/sha256 \"${cchv_server_linux_arm64}\"/" cchv-server.rb
-          sed -i "s/sha256 \".*_LINUX_X64\"/sha256 \"${cchv_server_linux_x64}\"/" cchv-server.rb
+          sed -i "s/version \".*\"/version \"${VERSION}\"/" history-hub-server.rb
+          sed -i "s/sha256 \".*_MACOS_ARM64\"/sha256 \"${cchv_server_macos_arm64}\"/" history-hub-server.rb
+          sed -i "s/sha256 \".*_MACOS_X64\"/sha256 \"${cchv_server_macos_x64}\"/" history-hub-server.rb
+          sed -i "s/sha256 \".*_LINUX_ARM64\"/sha256 \"${cchv_server_linux_arm64}\"/" history-hub-server.rb
+          sed -i "s/sha256 \".*_LINUX_X64\"/sha256 \"${cchv_server_linux_x64}\"/" history-hub-server.rb
 
           # Also handle non-placeholder SHA256 (for subsequent releases)
           # Use line-based replacement: find the url line, then replace the next sha256 line
           python3 -c "
           import re, os
-          with open('cchv-server.rb') as f:
+          with open('history-hub-server.rb') as f:
               content = f.read()
           v = os.environ['VERSION']
           pairs = [
@@ -188,13 +188,13 @@ jobs:
                   pattern = r'(url \".*' + re.escape(asset) + r'.*\"\n\s+sha256 \")([a-fA-F0-9]+|PLACEHOLDER\w*)(\")'
                   content = re.sub(pattern, r'\g<1>' + sha + r'\3', content)
           content = re.sub(r'version \".*?\"', f'version \"{v}\"', content, count=1)
-          with open('cchv-server.rb', 'w') as f:
+          with open('history-hub-server.rb', 'w') as f:
               f.write(content)
           "
 
           # Push updated formula
-          gh api repos/local/homebrew-tap/contents/Formula/cchv-server.rb \
+          gh api repos/local/homebrew-tap/contents/Formula/history-hub-server.rb \
             -X PUT \
-            -f message="chore: update cchv-server to v${VERSION}" \
-            -f content="$(base64 -w0 < cchv-server.rb)" \
+            -f message="chore: update history-hub-server to v${VERSION}" \
+            -f content="$(base64 -w0 < history-hub-server.rb)" \
             -f sha="${FILE_SHA}"

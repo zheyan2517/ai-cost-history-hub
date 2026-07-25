@@ -10,7 +10,7 @@ tools: Bash, Read
 model: sonnet
 ---
 
-You run the pre-release quality gate for **claude-code-history-viewer**. The full
+You run the pre-release quality gate for **ai-cost-history-hub**. The full
 gate is defined in CLAUDE.md → "Release Process / Phase 1". Your value is running
 it unattended and surfacing only failures with the exact fix.
 

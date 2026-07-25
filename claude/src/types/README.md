@@ -1,6 +1,6 @@
 # Type System Architecture
 
-This directory contains the type definitions for the Claude Code History Viewer application, organized for LLM-friendliness and maintainability.
+This directory contains the type definitions for the AI Cost History Hub application, organized for LLM-friendliness and maintainability.
 
 ## Directory Structure
 

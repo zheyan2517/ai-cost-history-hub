@@ -26,18 +26,18 @@ The app has a built-in Tauri auto-updater that checks `latest.json` from GitHub 
 
 | Component | Location | Purpose |
 |-----------|----------|---------|
-| Cask definition | `local/homebrew-tap/Casks/claude-code-history-viewer.rb` | Homebrew install recipe |
+| Cask definition | `local/homebrew-tap/Casks/ai-cost-history-hub.rb` | Homebrew install recipe |
 | Release workflow | `.github/workflows/updater-release.yml` | Computes SHA256, updates Cask directly, verifies, then publishes |
 
 ### Required Secret
 
-`HOMEBREW_TAP_TOKEN` must be configured in the **claude-code-history-viewer** repository settings:
+`HOMEBREW_TAP_TOKEN` must be configured in the **ai-cost-history-hub** repository settings:
 
 1. Go to GitHub > Settings > Developer settings > Personal access tokens > Fine-grained tokens
 2. Create a token with:
    - Repository access: `local/homebrew-tap`
    - Permissions: Contents (Read and write)
-3. Add the token as a repository secret named `HOMEBREW_TAP_TOKEN` in `local/claude-code-history-viewer`
+3. Add the token as a repository secret named `HOMEBREW_TAP_TOKEN` in `zheyan2517/ai-cost-history-hub`
 
 ## Manual Cask Update
 
@@ -47,15 +47,15 @@ If the automated workflow fails, update the Cask manually:
 
 ```bash
 VERSION="1.3.0"
-curl -sL "https://github.com/local/claude-code-history-viewer/releases/download/v${VERSION}/Claude.Code.History.Viewer_${VERSION}_universal.dmg" \
-  -o /tmp/cchv.dmg
+curl -sL "https://github.com/zheyan2517/ai-cost-history-hub/releases/download/v${VERSION}/AI.Cost.History.Hub_${VERSION}_universal.dmg" \
+  -o /tmp/history-hub.dmg
 ```
 
 ### 2. Compute SHA256
 
 ```bash
-shasum -a 256 /tmp/cchv.dmg
-# Output: <sha256>  /tmp/cchv.dmg
+shasum -a 256 /tmp/history-hub.dmg
+# Output: <sha256>  /tmp/history-hub.dmg
 ```
 
 ### 3. Update the Cask
@@ -64,12 +64,12 @@ shasum -a 256 /tmp/cchv.dmg
 git clone https://github.com/local/homebrew-tap.git /tmp/homebrew-tap
 cd /tmp/homebrew-tap
 
-# Edit Casks/claude-code-history-viewer.rb
+# Edit Casks/ai-cost-history-hub.rb
 # Update: version "<VERSION>"
 # Update: sha256 "<SHA256>"
 
-git add Casks/claude-code-history-viewer.rb
-git commit -m "chore: update claude-code-history-viewer to v${VERSION}"
+git add Casks/ai-cost-history-hub.rb
+git commit -m "chore: update ai-cost-history-hub to v${VERSION}"
 git push
 ```
 
@@ -77,27 +77,27 @@ git push
 
 ```bash
 brew tap local/tap
-brew info --cask claude-code-history-viewer
-brew audit --cask claude-code-history-viewer
+brew info --cask ai-cost-history-hub
+brew audit --cask ai-cost-history-hub
 ```
 
 ## Verification Commands
 
 ```bash
 # Check Cask info
-brew info --cask claude-code-history-viewer
+brew info --cask ai-cost-history-hub
 
 # Audit Cask (lint check)
-brew audit --cask claude-code-history-viewer
+brew audit --cask ai-cost-history-hub
 
 # Test install (dry run)
-brew install --cask claude-code-history-viewer --dry-run
+brew install --cask ai-cost-history-hub --dry-run
 
 # Full install
-brew install --cask claude-code-history-viewer
+brew install --cask ai-cost-history-hub
 
 # Verify installed app
-ls "/Applications/Claude Code History Viewer.app"
+ls "/Applications/AI Cost History Hub.app"
 ```
 
 ## Troubleshooting
@@ -115,14 +115,14 @@ ls "/Applications/Claude Code History Viewer.app"
 **Fix**: Re-download the DMG and recompute the checksum:
 
 ```bash
-curl -sL "<dmg-url>" -o /tmp/cchv.dmg
-shasum -a 256 /tmp/cchv.dmg
+curl -sL "<dmg-url>" -o /tmp/history-hub.dmg
+shasum -a 256 /tmp/history-hub.dmg
 # Update the Cask with the correct checksum
 ```
 
 ### Cask not found after `brew tap`
 
-**Symptom**: `brew install --cask claude-code-history-viewer` returns "Cask not found".
+**Symptom**: `brew install --cask ai-cost-history-hub` returns "Cask not found".
 
 **Fix**:
 
@@ -132,14 +132,14 @@ brew untap local/tap
 brew tap local/tap
 
 # Verify Cask exists
-brew info --cask claude-code-history-viewer
+brew info --cask ai-cost-history-hub
 ```
 
 ### Rollback to previous version
 
 ```bash
 # In the tap repository
-git log --oneline Casks/claude-code-history-viewer.rb
+git log --oneline Casks/ai-cost-history-hub.rb
 git revert <commit-hash>
 git push
 ```
@@ -148,17 +148,17 @@ git push
 
 ```bash
 brew tap local/tap
-brew install --cask claude-code-history-viewer
+brew install --cask ai-cost-history-hub
 ```
 
 Upgrade:
 
 ```bash
-brew upgrade --cask claude-code-history-viewer
+brew upgrade --cask ai-cost-history-hub
 ```
 
 Uninstall:
 
 ```bash
-brew uninstall --cask claude-code-history-viewer
+brew uninstall --cask ai-cost-history-hub
 ```

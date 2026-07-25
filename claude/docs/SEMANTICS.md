@@ -1,6 +1,6 @@
 # Semantics & Data Abstraction Layer
 
-This document describes how `claude-code-history-viewer` interprets raw data from Claude memory sessions and abstracts them into semantic concepts like "Edits", "Sessions", and "Commits".
+This document describes how `ai-cost-history-hub` interprets raw data from Claude memory sessions and abstracts them into semantic concepts like "Edits", "Sessions", and "Commits".
 
 ## 1. Sessions
 
@@ -32,7 +32,7 @@ The app identifies "Edits" by parsing `tool_use` events in the conversation hist
 
 When these tools are found, they are "hoisted" into a `SessionFileEdit` object, effectively treating the tool execution as a "commit" to that specific file at that timestamp.
 
-### Git Integration (Planned/Partial)
+### Git support (Planned/Partial)
 The `ClaudeProject` type contains a `git_info` field, which detects if the project is a Git repository or worktree. However, the Board View currently visualizes the **intent** of the AI (via tool use) rather than the **actual git reflog**. 
 
 **Note**: This means if the user modified files externally or reverted changes without telling Claude, the "Virtual Edit History" might diverge from the actual filesystem state.

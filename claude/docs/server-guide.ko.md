@@ -1,6 +1,6 @@
 # 서버 모드 가이드
 
-Claude Code History Viewer를 웹 서버로 실행하세요 — 어디서든 브라우저로 대화 기록을 확인할 수 있습니다.
+AI Cost History Hub를 웹 서버로 실행하세요 — 어디서든 브라우저로 대화 기록을 확인할 수 있습니다.
 
 **Languages**: [English](server-guide.md) | [한국어](server-guide.ko.md)
 
@@ -58,12 +58,12 @@ sudo apt update && sudo apt install -y cloudflared
 
 ```bash
 # Homebrew (추천)
-brew install local/tap/cchv-server
-cchv-server --serve
+brew install local/tap/history-hub-server
+history-hub-server --serve
 
 # 또는 소스에서 빌드
-git clone https://github.com/local/claude-code-history-viewer.git
-cd claude-code-history-viewer
+git clone https://github.com/zheyan2517/ai-cost-history-hub.git
+cd ai-cost-history-hub
 just setup
 just serve-build-run
 ```
@@ -135,17 +135,17 @@ ssh root@203.0.113.50
 # (본인의 IP로 바꾸세요)
 ```
 
-### 3단계: cchv-server 설치
+### 3단계: history-hub-server 설치
 
 ```bash
 # 방법 A: Homebrew (macOS / Linux)
-brew install local/tap/cchv-server
+brew install local/tap/history-hub-server
 
 # 방법 B: 설치 스크립트
-curl -fsSL https://raw.githubusercontent.com/local/claude-code-history-viewer/main/install-server.sh | sh
+curl -fsSL https://raw.githubusercontent.com/zheyan2517/ai-cost-history-hub/main/install-server.sh | sh
 ```
 
-두 방법 모두 OS/아키텍처를 자동 감지해서 `cchv-server`를 PATH에 설치합니다.
+두 방법 모두 OS/아키텍처를 자동 감지해서 `history-hub-server`를 PATH에 설치합니다.
 
 ### 4단계: Claude 데이터 복사
 
@@ -176,7 +176,7 @@ sudo ufw enable
 ### 6단계: 서버 시작
 
 ```bash
-cchv-server --serve
+history-hub-server --serve
 ```
 
 출력:
@@ -195,16 +195,16 @@ SSH를 닫으면 서버도 꺼집니다. 항상 켜두려면:
 
 ```bash
 # 서비스 파일 다운로드
-curl -fsSL https://raw.githubusercontent.com/local/claude-code-history-viewer/main/contrib/cchv.service | sudo tee /etc/systemd/system/cchv.service > /dev/null
+curl -fsSL https://raw.githubusercontent.com/zheyan2517/ai-cost-history-hub/main/contrib/history-hub.service | sudo tee /etc/systemd/system/history-hub.service > /dev/null
 
 # 편집 — YOUR_USERNAME_HERE를 본인 계정으로 변경
-sudo systemctl edit --full cchv.service
+sudo systemctl edit --full history-hub.service
 
 # 활성화 및 시작
-sudo systemctl enable --now cchv.service
+sudo systemctl enable --now history-hub.service
 
 # 상태 확인
-sudo systemctl status cchv.service
+sudo systemctl status history-hub.service
 ```
 
 이제 VPS가 재부팅되어도 서버가 자동으로 시작됩니다.
@@ -248,8 +248,8 @@ ssh root@203.0.113.50
 **2. 클론 및 시작**
 
 ```bash
-git clone https://github.com/local/claude-code-history-viewer.git
-cd claude-code-history-viewer
+git clone https://github.com/zheyan2517/ai-cost-history-hub.git
+cd ai-cost-history-hub
 docker compose up -d
 ```
 
@@ -289,24 +289,24 @@ command: ["--port", "3727", "--token", "내-고정-토큰"]
 ### 빌드
 
 ```bash
-git clone https://github.com/local/claude-code-history-viewer.git
-cd claude-code-history-viewer
+git clone https://github.com/zheyan2517/ai-cost-history-hub.git
+cd ai-cost-history-hub
 just setup
 just serve-build
 ```
 
-바이너리 위치: `src-tauri/target/release/claude-code-history-viewer`
+바이너리 위치: `src-tauri/target/release/ai-cost-history-hub`
 
 ### VPS에 배포
 
 ```bash
 # 바이너리를 VPS로 복사
-scp src-tauri/target/release/claude-code-history-viewer root@203.0.113.50:/usr/local/bin/cchv-server
+scp src-tauri/target/release/ai-cost-history-hub root@203.0.113.50:/usr/local/bin/history-hub-server
 
 # VPS에서 실행
 ssh root@203.0.113.50
-chmod +x /usr/local/bin/cchv-server
-cchv-server --serve
+chmod +x /usr/local/bin/history-hub-server
+history-hub-server --serve
 ```
 
 ### 개발 모드
@@ -365,7 +365,7 @@ GET /health
 
 | 원인 | 해결 |
 |------|------|
-| 서버가 꺼져 있음 | `systemctl status cchv.service` 확인 |
+| 서버가 꺼져 있음 | `systemctl status history-hub.service` 확인 |
 | IP 주소가 틀림 | VPS의 **공인 IP**를 사용 (`0.0.0.0`이나 `192.168.x.x`가 아님) |
 | 방화벽이 포트 차단 | `sudo ufw allow 3727/tcp` + VPS 업체 보안그룹 확인 |
 | 포트가 이미 사용 중 | `lsof -ti :3727 \| xargs kill` 또는 `--port 3728` |

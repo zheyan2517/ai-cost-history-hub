@@ -91,7 +91,7 @@ ${t("error.copyTemplate.timestamp", {
       const emailSubject = encodeURIComponent(
         t("error.emailTemplate.subject", {
           error: this.state.error?.message || "Unknown error",
-          defaultValue: "[Claude Code History Viewer] Error Report: {{error}}",
+          defaultValue: "[AI Cost History Hub] Error Report: {{error}}",
         })
       );
       const emailBody = encodeURIComponent(`
@@ -101,7 +101,7 @@ ${t("error.emailTemplate.greeting", {
 
 ${t("error.emailTemplate.description", {
   defaultValue:
-    "I encountered the following error while using Claude Code History Viewer:",
+    "I encountered the following error while using AI Cost History Hub:",
 })}
 
 ${t("error.emailTemplate.placeholder", {
@@ -195,10 +195,10 @@ ${t("error.emailTemplate.thanks", {
                   </p>
                   <div className="flex flex-col gap-3">
                     <a
-                      href={`mailto:feedback@claude-history-viewer.app?subject=${emailSubject}&body=${emailBody}`}
+                      href={`mailto:feedback@aicosthistoryhub.local?subject=${emailSubject}&body=${emailBody}`}
                       className="text-sm font-medium text-info hover:underline"
                     >
-                      feedback@claude-history-viewer.app
+                      feedback@aicosthistoryhub.local
                     </a>
                     <Button
                       variant="outline"
@@ -256,7 +256,7 @@ ${t("error.emailTemplate.thanks", {
                       <span className="text-muted-foreground/60">•</span>
                       {t("error.troubleshootingSteps.updateVersion", {
                         defaultValue:
-                          "Ensure you have the latest version of Claude Code History Viewer installed",
+                          "Ensure you have the latest version of AI Cost History Hub installed",
                       })}
                     </li>
                     <li className="flex items-start gap-2">

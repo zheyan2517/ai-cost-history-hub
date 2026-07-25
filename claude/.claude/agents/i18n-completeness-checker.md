@@ -10,7 +10,7 @@ tools: Read, Glob, Bash
 model: haiku
 ---
 
-You verify i18n completeness for **claude-code-history-viewer**. Missing or
+You verify i18n completeness for **ai-cost-history-hub**. Missing or
 duplicated keys are a recurring review failure, so be exhaustive and mechanical.
 
 ## Hard rules

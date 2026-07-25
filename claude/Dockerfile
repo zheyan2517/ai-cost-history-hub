@@ -1,4 +1,4 @@
-# Multi-stage build for Claude Code History Viewer (WebUI Server Mode)
+# Multi-stage build for AI Cost History Hub (WebUI Server Mode)
 # Frontend assets are embedded into the binary via rust-embed — no separate dist/ needed.
 
 # ── Stage 1: Build frontend ──────────────────────────────────────────
@@ -44,13 +44,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 ENV http_proxy= https_proxy=
 
 # Run as non-root user for security
-RUN groupadd -r cchv && useradd -r -g cchv -d /home/cchv -s /sbin/nologin -m cchv
+RUN groupadd -r achh && useradd -r -g achh -d /home/achh -s /sbin/nologin -m achh
 
-COPY --from=backend /app/src-tauri/target/release/claude-code-history-viewer /usr/local/bin/cchv-server
+# Cargo package binary name remains the crate output name; install as product server name
+COPY --from=backend /app/src-tauri/target/release/claude-code-history-viewer /usr/local/bin/history-hub-server
 
 ENV PORT=3727
 EXPOSE 3727
-USER cchv
+USER achh
 
-ENTRYPOINT ["cchv-server", "--serve", "--host", "0.0.0.0"]
+ENTRYPOINT ["history-hub-server", "--serve", "--host", "0.0.0.0"]
 CMD ["--port", "3727"]

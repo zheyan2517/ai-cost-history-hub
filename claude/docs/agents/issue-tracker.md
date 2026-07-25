@@ -1,6 +1,6 @@
 # Issue tracker: GitHub
 
-Repo: **`local/claude-code-history-viewer`**.
+Repo: **`zheyan2517/ai-cost-history-hub`**.
 Issues and PRDs for this repo live as GitHub issues. Use the `gh` CLI for all operations.
 
 ## Conventions

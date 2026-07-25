@@ -1,6 +1,6 @@
-# Building Claude Code History Viewer on Linux
+# Building AI Cost History Hub on Linux
 
-This guide explains how to build the Claude Code History Viewer application on Linux systems.
+This guide explains how to build the AI Cost History Hub application on Linux systems.
 
 ## Prerequisites
 
@@ -12,7 +12,7 @@ This guide explains how to build the Claude Code History Viewer application on L
 - **Node.js 18+** - JavaScript runtime
 - **pnpm** - Package manager
 - **Rust toolchain** - Required for Tauri
-- **System development libraries** - Required for WebKit/GTK integration
+- **System development libraries** - Required for WebKit/GTK setup
 
 ## Installation Steps
 
@@ -61,8 +61,8 @@ sudo apt install -y \
 
 ```bash
 # Clone the repository
-git clone https://github.com/local/claude-code-history-viewer.git
-cd claude-code-history-viewer
+git clone https://github.com/zheyan2517/ai-cost-history-hub.git
+cd ai-cost-history-hub
 
 # Install Node.js dependencies
 pnpm install
@@ -75,36 +75,36 @@ pnpm tauri:build:linux
 
 The build process will create three package formats:
 
-1. **DEB Package** (Debian/Ubuntu): `src-tauri/target/release/bundle/deb/Claude Code History Viewer_*.deb`
-2. **RPM Package** (Red Hat/Fedora): `src-tauri/target/release/bundle/rpm/Claude Code History Viewer-*.rpm`
-3. **AppImage** (Portable): `src-tauri/target/release/bundle/appimage/Claude Code History Viewer_*.AppImage`
+1. **DEB Package** (Debian/Ubuntu): `src-tauri/target/release/bundle/deb/AI Cost History Hub_*.deb`
+2. **RPM Package** (Red Hat/Fedora): `src-tauri/target/release/bundle/rpm/AI Cost History Hub-*.rpm`
+3. **AppImage** (Portable): `src-tauri/target/release/bundle/appimage/AI Cost History Hub_*.AppImage`
 
 ## Installation
 
 ### Using DEB Package (Ubuntu/Debian)
 ```bash
-sudo dpkg -i "src-tauri/target/release/bundle/deb/Claude Code History Viewer_1.0.0-beta.4_amd64.deb"
+sudo dpkg -i "src-tauri/target/release/bundle/deb/AI Cost History Hub_1.0.0-beta.4_amd64.deb"
 ```
 
 ### Using AppImage (Portable)
 ```bash
-chmod +x "src-tauri/target/release/bundle/appimage/Claude Code History Viewer_1.0.0-beta.4_amd64.AppImage"
+chmod +x "src-tauri/target/release/bundle/appimage/AI Cost History Hub_1.0.0-beta.4_amd64.AppImage"
 ./Claude\ Code\ History\ Viewer_1.0.0-beta.4_amd64.AppImage
 ```
 
 ### Using RPM Package (Fedora/RHEL)
 ```bash
-sudo rpm -i "src-tauri/target/release/bundle/rpm/Claude Code History Viewer-1.0.0-beta.4-1.x86_64.rpm"
+sudo rpm -i "src-tauri/target/release/bundle/rpm/AI Cost History Hub-1.0.0-beta.4-1.x86_64.rpm"
 ```
 
 ## Running the Application
 
 After installation via DEB/RPM package:
 ```bash
-claude-code-history-viewer
+ai-cost-history-hub
 ```
 
-Or find it in your application menu under "Claude Code History Viewer".
+Or find it in your application menu under "AI Cost History Hub".
 
 ## Troubleshooting
 
