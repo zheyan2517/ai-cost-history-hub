@@ -9,7 +9,7 @@ set "AGENT_COST_DASHBOARD_DIR=%~dp0agent"
 echo.
 echo  ============================================
 echo   AI Cost History Hub
-echo   History viewer + Cost Dashboard launcher
+echo   Local history and cost analytics
 echo  ============================================
 echo.
 

@@ -1,8 +1,8 @@
-# Agent Cost Dashboard
+# Cost Dashboard
 
-Web dashboard to monitor API costs for [Pi](https://github.com/mariozechner/pi-coding-agent), [Oh My Pi](https://github.com/can1357/oh-my-pi), [Claude Code](https://github.com/anthropics/claude-code), [Codex CLI](https://github.com/openai/codex), and [Gemini CLI](https://github.com/google-gemini/gemini-cli) coding agents.
+Web dashboard to monitor local API costs for common coding agents (Pi, Oh My Pi, Claude Code, Codex CLI, Gemini CLI, and related tools).
 
-No external dependencies â€?pure Python stdlib.
+No external dependencies â€” pure Python stdlib.
 
 ![Main dashboard showing global stats, and daily spending](screenshots/dashboard-overview.png)
 

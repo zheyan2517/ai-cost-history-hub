@@ -6,17 +6,15 @@ Local workspace for AI coding-agent **conversation history** and **API cost anal
 **License:** [MIT](LICENSE)  
 **Status:** Active development (`v0.1.0`)
 
-[Features](#features) · [Quick start](#quick-start-no-rust-required) · [Desktop app](#desktop-app-history-viewer--one-click-cost-dashboard) · [Security](#security) · [Contributing](#contributing)
-
 ---
 
 ## Features
 
-- **Unified local launcher** — start cost analytics and a small status portal in one step
+- **One-click local launcher** — start cost analytics and a status portal together
 - **Multi-agent cost view** — tokens, spend, models, tools, projects, and sessions (local data)
-- **History viewer desktop app** — browse coding-agent conversation history (optional Tauri build)
-- **One-click cost dashboard** from the desktop app top bar (sidecar process)
-- **Privacy-first defaults** — services bind to `127.0.0.1` only (not exposed on your LAN)
+- **History viewer (desktop)** — browse coding-agent conversation history (optional Tauri build)
+- **In-app cost dashboard** — open the local cost UI from the desktop top bar
+- **Privacy-first defaults** — services bind to `127.0.0.1` only
 - **No cloud account required** for the Python dashboard path
 
 ### Screenshots
@@ -35,15 +33,15 @@ Local workspace for AI coding-agent **conversation history** and **API cost anal
 
 ```
 ai-cost-history-hub/
-├── start.bat                 # Main entry: coordinator + unified portal
+├── start.bat                 # Main entry: coordinator + portal
 ├── start-cost-dashboard.bat  # Cost dashboard only
 ├── start-all.bat             # Same as start.bat
 ├── config.json               # Ports and path settings
 ├── scripts/
 │   └── coordinator.py        # Process manager, health checks, portal
-├── agent/                    # Cost dashboard (Python)
+├── agent/                    # Cost analytics service (Python)
 ├── claude/                   # History viewer desktop app (Tauri)
-├── docs/                     # Roadmap and maintainer notes
+├── docs/
 ├── CONTRIBUTING.md
 ├── SECURITY.md
 └── LICENSE
@@ -62,8 +60,8 @@ start.bat
 This will:
 
 1. Start the cost dashboard on `127.0.0.1:8753` (next free port if busy)
-2. Open the unified portal at `http://127.0.0.1:8740/` (embedded dashboard + status)
-3. Bind to loopback only (not exposed on the LAN)
+2. Open the portal at `http://127.0.0.1:8740/`
+3. Bind to loopback only
 
 Cost dashboard only:
 
@@ -80,7 +78,7 @@ python scripts\coordinator.py stop
 
 ### Session data locations (read-only)
 
-The dashboard reads local agent session directories when present, for example:
+When present, local agent session directories are read, for example:
 
 | Agent | Typical path |
 |-------|----------------|
@@ -91,7 +89,7 @@ The dashboard reads local agent session directories when present, for example:
 
 ---
 
-## Desktop app (history viewer + one-click cost dashboard)
+## Desktop app
 
 Requires **Node.js**, **pnpm**, **Rust (cargo)**, and **Python 3.12+**.
 
@@ -101,11 +99,7 @@ pnpm install
 pnpm tauri:dev
 ```
 
-After launch, use the top-bar **wallet / Cost Dashboard** control to:
-
-- Start or reuse the local cost dashboard
-- Open `http://127.0.0.1:<port>` in the browser
-- Stop the sidecar process when the app exits (if started by the app)
+Use the top-bar **Cost Dashboard** control to open the local cost UI.
 
 Optional environment variable:
 
@@ -137,25 +131,18 @@ Report vulnerabilities privately — see [SECURITY.md](SECURITY.md).
 | [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) | Community standards |
 | [CHANGELOG.md](CHANGELOG.md) | Release history |
 | [docs/ROADMAP.md](docs/ROADMAP.md) | Near-term plans |
-| [docs/MAINTAINER.md](docs/MAINTAINER.md) | Maintainer responsibilities |
+| [docs/MAINTAINER.md](docs/MAINTAINER.md) | Maintainer notes |
 
 ---
 
-## Key integration files
+## Key modules
 
-| File | Role |
+| Path | Role |
 |------|------|
-| `scripts/coordinator.py` | Unified coordination and portal |
-| `claude/src-tauri/src/commands/cost_dashboard.rs` | Tauri sidecar commands |
+| `scripts/coordinator.py` | Local process manager and portal |
+| `claude/src-tauri/src/commands/cost_dashboard.rs` | Desktop cost-UI process commands |
 | `claude/src/services/costDashboard.ts` | Frontend API |
-| `claude/src/layouts/Header/Header.tsx` | Top-bar entry point |
-
-## Capabilities
-
-| Capability | Component |
-|------------|-----------|
-| Multi-provider sessions, messages, search | History viewer (`claude/`) |
-| Cross-agent cost, model, and tool billing views | Cost dashboard (`agent/`) |
+| `claude/src/layouts/Header/Header.tsx` | Top-bar entry |
 
 ## Troubleshooting
 
@@ -166,10 +153,10 @@ Report vulnerabilities privately — see [SECURITY.md](SECURITY.md).
 
 ## Contributing
 
-Issues and PRs are welcome. Please read [CONTRIBUTING.md](CONTRIBUTING.md) before submitting.
+Issues and PRs are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License
 
 MIT © 2026 [zheyan2517](https://github.com/zheyan2517). See [LICENSE](LICENSE).
 
-Component trees under `claude/` and `agent/` also include their own `LICENSE` files.
+Third-party components retain their original MIT notices under their own trees where applicable.

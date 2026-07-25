@@ -2151,14 +2151,14 @@ def generate_html():
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Agent Cost Dashboard</title>
+    <title>Cost Dashboard</title>
     <style>
 {dashboard_css}
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Agent Cost Dashboard</h1>
+        <h1>Cost Dashboard</h1>
         <p class="subtitle">Generated on {datetime.now().strftime("%Y-%m-%d %H:%M:%S")} <span class="refresh-note">Refresh page for updated stats</span></p>
 
         <div class="stats-grid">
@@ -2295,7 +2295,7 @@ def generate_html():
         </div>
 
         <footer>
-            Agent Cost Dashboard • Data from ~/.pi, ~/.omp, ~/.claude, and ~/.codex
+            Cost Dashboard • Data from local agent session directories
         </footer>
     </div>
     <script>
@@ -2392,7 +2392,7 @@ class DashboardHandler(http.server.BaseHTTPRequestHandler):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Agent Cost Dashboard Server")
+    parser = argparse.ArgumentParser(description="Cost Dashboard Server")
     parser.add_argument(
         "-H",
         "--host",
@@ -2420,7 +2420,7 @@ def main():
             socketserver.TCPServer.server_bind(self)
 
     httpd = DashboardServer((args.host, args.port), DashboardHandler)
-    print("🚀 Agent Cost Dashboard (pi, omp, claude, codex, gemini)")
+    print("Cost Dashboard (local agent sessions)")
     print(f"   Serving on: http://{args.host}:{args.port}")
     print("   Data from:")
     for sessions_dir, agent_cmd, source_type in SESSIONS_DIRS:

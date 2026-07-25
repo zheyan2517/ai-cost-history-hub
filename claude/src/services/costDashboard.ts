@@ -1,8 +1,7 @@
 /**
- * Agent Cost Dashboard sidecar client (Scheme A).
- * Desktop (Tauri): invokes Rust commands that manage the Python process.
- * Browser / WebUI: falls back to coordinator open-cost flow is unavailable —
- * user should use the unified portal or start-cost-dashboard.bat.
+ * Local cost dashboard client.
+ * Desktop (Tauri): invokes Rust commands that manage the local Python process.
+ * Browser / WebUI: use start.bat or start-cost-dashboard.bat instead.
  */
 
 import { api } from "@/services/api";
@@ -28,8 +27,8 @@ export function canUseDesktopCostDashboard(): boolean {
 export async function openCostDashboard(): Promise<CostDashboardOpenResult> {
   if (!isTauri()) {
     throw new Error(
-      "Cost Dashboard sidecar is only available in the desktop app. " +
-        "Use E:\\xiangmu\\wangquanti\\start.bat or start-cost-dashboard.bat instead."
+      "Cost Dashboard is only available in the desktop app. " +
+        "Use start.bat or start-cost-dashboard.bat instead."
     );
   }
   return api<CostDashboardOpenResult>("open_cost_dashboard");

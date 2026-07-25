@@ -1,32 +1,27 @@
 # Roadmap
 
-High-level plans for AI Cost History Hub. Items may move based on user feedback.
+Plans for AI Cost History Hub. Items may move based on feedback.
 
 ## Now (v0.1.x)
 
 - [x] Local cost dashboard + portal launcher
 - [x] English-only docs and UI language pin
 - [x] Loopback-only defaults and security notes
-- [ ] One-command health check script for CI-like local verification
+- [ ] One-command health check for local verification
 - [ ] Better first-run errors when Python / ports are missing
 
 ## Next
 
-- [ ] macOS / Linux start scripts alongside Windows `.bat`
-- [ ] Optional auto-open browser flags documented per platform
-- [ ] Desktop app packaging notes (Windows installer / portable)
-- [ ] Lightweight integration tests for coordinator start/stop
+- [ ] macOS / Linux start scripts
+- [ ] Desktop packaging notes (Windows installer / portable)
+- [ ] Lightweight tests for coordinator start/stop
 
 ## Later
 
-- [ ] Optional multi-user auth if remote access is ever required (off by default)
-- [ ] Export/report helpers for monthly cost summaries
-- [ ] Contributor onboarding improvements based on real issues
+- [ ] Optional auth if remote access is ever required (off by default)
+- [ ] Export helpers for monthly cost summaries
+- [ ] Contributor onboarding based on real issues
 
 ## Feedback
 
-Open a GitHub issue:
-
-- Bug: unexpected crash, wrong totals, install failure
-- Enhancement: workflow or UX improvements
-- Docs: unclear setup steps
+Open a GitHub issue for bugs, enhancements, or docs.

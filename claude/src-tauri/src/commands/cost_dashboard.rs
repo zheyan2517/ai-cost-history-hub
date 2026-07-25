@@ -1,6 +1,6 @@
-//! Agent Cost Dashboard sidecar (Scheme A).
+//! Local cost dashboard process manager.
 //!
-//! Spawns / reuses the pure-Python cost dashboard bound only to 127.0.0.1
+//! Spawns / reuses the pure-Python cost service bound only to 127.0.0.1
 //! and opens it in the system browser.
 
 use std::fs;
@@ -21,7 +21,7 @@ const PORT_SCAN_RANGE: u16 = 20;
 const READY_TIMEOUT: Duration = Duration::from_secs(15);
 const READY_POLL: Duration = Duration::from_millis(200);
 
-/// Shared handle for the running cost-dashboard process.
+/// Shared handle for the running cost dashboard process.
 #[derive(Default)]
 pub struct CostDashboardState {
     inner: Mutex<SidecarState>,
@@ -104,7 +104,7 @@ fn resolve_agent_dir() -> Result<PathBuf, String> {
     }
 
     Err(
-        "Could not locate agent cost dashboard (cost_dashboard.py). \
+        "Could not locate cost_dashboard.py. \
          Set AGENT_COST_DASHBOARD_DIR or keep agent/ beside claude/."
             .to_string(),
     )
@@ -265,7 +265,7 @@ fn take_dead_child(state: &mut SidecarState) {
     }
 }
 
-/// Start the sidecar if needed and open the dashboard in the system browser.
+/// Start the local cost service if needed and open it in the system browser.
 #[tauri::command]
 pub async fn open_cost_dashboard(
     state: State<'_, CostDashboardState>,
@@ -345,7 +345,7 @@ pub async fn open_cost_dashboard(
     })
 }
 
-/// Stop the managed sidecar process if it is running.
+/// Stop the managed cost service process if it is running.
 #[tauri::command]
 pub async fn stop_cost_dashboard(
     state: State<'_, CostDashboardState>,
@@ -363,7 +363,7 @@ pub async fn stop_cost_dashboard(
     Ok(false)
 }
 
-/// Query whether a managed sidecar is currently running.
+/// Query whether a managed cost service is currently running.
 #[tauri::command]
 pub async fn cost_dashboard_status(
     state: State<'_, CostDashboardState>,
@@ -404,7 +404,7 @@ pub async fn cost_dashboard_status(
     })
 }
 
-/// Kill the managed sidecar on app exit (best-effort).
+/// Kill the managed cost service on app exit (best-effort).
 pub fn shutdown_cost_dashboard(state: &CostDashboardState) {
     if let Ok(mut guard) = state.inner.lock() {
         if let Some(mut child) = guard.child.take() {

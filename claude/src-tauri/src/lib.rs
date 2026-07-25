@@ -297,7 +297,7 @@ fn run_tauri() {
         .build(tauri::generate_context!())
         .expect("error while building tauri application")
         .run(|app, event| {
-            // Stop the cost-dashboard sidecar when the desktop app exits.
+            // Stop the local cost service when the desktop app exits.
             if let tauri::RunEvent::Exit = event {
                 if let Some(state) = app.try_state::<CostDashboardState>() {
                     shutdown_cost_dashboard(&*state);

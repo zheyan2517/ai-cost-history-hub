@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-Wangquanti coordinator — Scheme A process manager.
+AI Cost History Hub coordinator.
 
-Starts Agent Cost Dashboard (loopback only), serves a small local portal,
-and reports CCHV readiness. Pure Python stdlib (3.12+).
+Starts the local cost dashboard (loopback only), serves a small portal,
+and reports desktop-app readiness. Pure Python stdlib (3.12+).
 """
 
 from __future__ import annotations
@@ -296,7 +296,7 @@ def ensure_cost_dashboard(cfg: dict, open_browser: bool = False) -> dict:
     return info
 
 
-def cchv_status(cfg: dict) -> dict:
+def desktop_status(cfg: dict) -> dict:
     claude = (ROOT / cfg["paths"]["claudeDir"]).resolve()
     package_json = claude / "package.json"
     node_modules = claude / "node_modules"
@@ -316,10 +316,10 @@ def cchv_status(cfg: dict) -> dict:
     }
 
 
-def portal_html(cost: dict, cchv: dict) -> str:
+def portal_html(cost: dict, desktop: dict) -> str:
     cost_url = cost.get("url") or "http://127.0.0.1:8753"
     cost_ok = bool(cost.get("running"))
-    cchv_ready = cchv.get("canDev")
+    desktop_ready = desktop.get("canDev")
     return f"""<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
@@ -408,7 +408,7 @@ def portal_html(cost: dict, cchv: dict) -> str:
   <header>
     <div>
       <h1>AI Cost History Hub</h1>
-      <div class="muted">Session history + cost analytics · local sidecar (127.0.0.1 only)</div>
+      <div class="muted">Session history + cost analytics · local only (127.0.0.1)</div>
     </div>
     <div class="muted">Status in sidebar · press F5 to refresh</div>
   </header>
@@ -423,28 +423,28 @@ def portal_html(cost: dict, cchv: dict) -> str:
       </div>
       <div class="card">
         <h2>History Viewer</h2>
-        <span class="badge {"ok" if cchv_ready else "warn"}">{"Ready for dev" if cchv_ready else "Dependencies needed"}</span>
+        <span class="badge {"ok" if desktop_ready else "warn"}">{"Ready for dev" if desktop_ready else "Dependencies needed"}</span>
         <ul>
-          <li>Path: <code>{cchv.get("path")}</code></li>
-          <li>pnpm: {"yes" if cchv.get("pnpmAvailable") else "no"}</li>
-          <li>cargo/Rust: {"yes" if cchv.get("cargoAvailable") else "no"}</li>
-          <li>node_modules: {"yes" if cchv.get("depsInstalled") else "no"}</li>
+          <li>Path: <code>{desktop.get("path")}</code></li>
+          <li>pnpm: {"yes" if desktop.get("pnpmAvailable") else "no"}</li>
+          <li>cargo/Rust: {"yes" if desktop.get("cargoAvailable") else "no"}</li>
+          <li>node_modules: {"yes" if desktop.get("depsInstalled") else "no"}</li>
         </ul>
         <div class="muted" style="margin-top:8px">Desktop dev command:</div>
-        <code style="display:block;margin-top:6px;word-break:break-all">{cchv.get("devHint")}</code>
-        <p class="muted" style="margin-top:10px">In the desktop app, use the wallet icon in the top bar to open the cost dashboard (Tauri required).</p>
+        <code style="display:block;margin-top:6px;word-break:break-all">{desktop.get("devHint")}</code>
+        <p class="muted" style="margin-top:10px">In the desktop app, use the Cost Dashboard control in the top bar (Tauri required).</p>
       </div>
       <div class="card">
         <h2>Security</h2>
         <ul>
-          <li>Sidecar binds to 127.0.0.1 only</li>
+          <li>Binds to 127.0.0.1 only</li>
           <li>Read-only access to local session data</li>
           <li>Lifecycle managed by coordinator / desktop app</li>
         </ul>
       </div>
     </aside>
     <section>
-      <iframe src="{cost_url}" title="Agent Cost Dashboard"></iframe>
+      <iframe src="{cost_url}" title="Cost Dashboard"></iframe>
     </section>
   </main>
 </body>
@@ -469,8 +469,8 @@ class PortalHandler(BaseHTTPRequestHandler):
 
     def do_GET(self) -> None:  # noqa: N802
         if self.path.startswith("/api/status"):
-            cchv = cchv_status(self.cfg)
-            self._json(200, {"costDashboard": self.cost_info, "cchv": cchv})
+            desktop = desktop_status(self.cfg)
+            self._json(200, {"costDashboard": self.cost_info, "desktop": desktop})
             return
         if self.path.startswith("/api/restart-cost"):
             stop_cost_dashboard()
@@ -498,7 +498,7 @@ class PortalHandler(BaseHTTPRequestHandler):
             self.wfile.write(data)
             return
         if self.path in ("/", "/index.html"):
-            html = portal_html(self.cost_info, cchv_status(self.cfg)).encode("utf-8")
+            html = portal_html(self.cost_info, desktop_status(self.cfg)).encode("utf-8")
             self.send_response(200)
             self.send_header("Content-Type", "text/html; charset=utf-8")
             self.send_header("Content-Length", str(len(html)))
@@ -534,7 +534,7 @@ def cmd_status(cfg: dict) -> int:
     port = int(cfg["costDashboard"]["port"])
     if port_open(host, port) and http_ok(f"http://{host}:{port}/"):
         cost = {"running": True, "url": f"http://{host}:{port}", "port": port}
-    payload = {"costDashboard": cost, "cchv": cchv_status(cfg)}
+    payload = {"costDashboard": cost, "desktop": desktop_status(cfg)}
     print(json.dumps(payload, indent=2, ensure_ascii=False))
     return 0
 

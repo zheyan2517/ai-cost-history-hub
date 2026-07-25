@@ -9,21 +9,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Unified local launcher (`start.bat`) and Python coordinator (`scripts/coordinator.py`)
-- Cost dashboard sidecar with loopback-only binding (`127.0.0.1`)
-- Unified portal UI with light theme and background image
-- Desktop history viewer integration entry (Cost Dashboard control)
-- Project documentation: README, CONTRIBUTING, SECURITY, CODE_OF_CONDUCT
+- Local cost analytics service and unified portal launcher
+- Loopback-only binding (`127.0.0.1`) by default
+- Light theme and background for the cost UI
+- Desktop history viewer entry for the local cost UI
+- Project docs: README, CONTRIBUTING, SECURITY, CODE_OF_CONDUCT
 - GitHub issue and pull request templates
 
 ### Changed
 
 - Product UI and public docs set to English-only
-- Root project branding: **AI Cost History Hub**
+- Project branding: **AI Cost History Hub**
+- Documentation framed as product secondary development / refactor work
 
 ### Security
 
-- Default host for cost dashboard forced to loopback
+- Default host for the cost service forced to loopback
 - Security policy published in `SECURITY.md`
 
 ## [Unreleased]
