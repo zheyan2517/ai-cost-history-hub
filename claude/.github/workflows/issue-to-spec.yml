@@ -1,0 +1,25 @@
+name: Issue Analysis Request
+
+on:
+  issues:
+    types: [labeled]
+
+permissions:
+  issues: write
+
+jobs:
+  request-analysis:
+    if: github.event.label.name == 'needs-spec'
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Add pending comment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: `👋 Thanks for the feature request!\n\nThis issue has been flagged for analysis. An implementation specification will be drafted to help contributors understand the scope.`
+            });
