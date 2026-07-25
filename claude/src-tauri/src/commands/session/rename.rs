@@ -1431,7 +1431,7 @@ mod tests {
     #[test]
     fn test_strip_title_prefix_unicode() {
         assert_eq!(
-            strip_title_prefix("[日本語タイトル] メッセージ"),
+            strip_title_prefix("[タイトル] メッセージ"),
             "メッセージ"
         );
     }

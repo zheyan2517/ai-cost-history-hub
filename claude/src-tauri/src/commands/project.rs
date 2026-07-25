@@ -235,8 +235,8 @@ pub async fn scan_projects(claude_path: String) -> Result<Vec<ClaudeProject>, St
                 }
 
                 // Estimate message count from file size - much faster
-                // lazy: still includes sidechain files; message_count口径与
-                // session_count 不同步是已知项,留待后续统一。
+                // lazy: still includes sidechain files; message_count
+                // session_count ,。
                 let estimated_messages = estimate_message_count_from_size(metadata.len());
                 message_count += estimated_messages;
 

@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-/// 与 antigravity-token-monitor 的 `PersistedSessionState` 结构一致
+/// Matches antigravity-token-monitor  `PersistedSessionState` 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct PersistedSessionState {
     pub signature: String,
@@ -10,7 +10,7 @@ pub struct PersistedSessionState {
     pub lifecycle: SessionLifecycle,
 }
 
-/// 快照条目（delta 增量）
+/// （delta ）
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SessionSnapshot {
     #[serde(rename = "capturedAt")]
@@ -30,7 +30,7 @@ pub struct SessionSnapshot {
     pub mode: String, // "reported" | "estimated"
 }
 
-/// Session 的生命周期状态
+/// Session 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 #[serde(rename_all = "lowercase")]
 pub enum SessionLifecycleStatus {
@@ -48,7 +48,7 @@ pub struct SessionLifecycle {
     pub archived_at: Option<u64>,
 }
 
-/// 单个 session 的 token 汇总（与 monitor 中 `SessionTotals` 一致）
+///  session  token （ monitor  `SessionTotals` ）
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct SessionTotals {
     #[serde(rename = "sessionId")]
@@ -80,7 +80,7 @@ pub struct SessionTotals {
     pub model_totals: Option<HashMap<String, u64>>,
 }
 
-/// 加载后的完整状态（sessions map keyed by sessionId）
+/// （sessions map keyed by sessionId）
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct AntigravityState {
     #[serde(rename = "lastPollAt", skip_serializing_if = "Option::is_none")]
@@ -88,7 +88,7 @@ pub struct AntigravityState {
     pub sessions: HashMap<String, PersistedSessionState>,
 }
 
-/// Antigravity 项目汇总 — 供前端展示
+/// Antigravity  — 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AntigravityProjectSummary {
     #[serde(rename = "sessionCount")]
@@ -114,7 +114,7 @@ pub struct AntigravityProjectSummary {
     pub sessions: Vec<AntigravitySessionInfo>,
 }
 
-/// 单个 session 列表摘要
+///  session 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AntigravitySessionInfo {
     #[serde(rename = "sessionId")]

@@ -33,7 +33,7 @@ static MODEL_ALIAS_MAP: Lazy<HashMap<&'static str, &'static str>> = Lazy::new(||
 // Internal helpers — fully testable (no Tauri state dependency)
 // ============================================================================
 
-/// 定位 antigravity 根目录：`~/.gemini/antigravity`
+/// Locate antigravity root directory：`~/.gemini/antigravity`
 pub fn get_antigravity_root() -> Option<PathBuf> {
     dirs::home_dir().map(|h| h.join(".gemini").join("antigravity"))
 }
@@ -760,7 +760,7 @@ fn build_state_from_rpc_cache(root: &Path) -> Result<AntigravityState, String> {
     build_state_from_token_monitor_sources(root)
 }
 
-/// 从单个 JSON 文件读取 `AntigravityState`
+/// Read from a single JSON file `AntigravityState`
 pub fn load_state_file(path: &Path) -> Result<AntigravityState, String> {
     let content = std::fs::read_to_string(path)
         .map_err(|e| format!("Failed to read {}: {}", path.display(), e))?;
@@ -768,7 +768,7 @@ pub fn load_state_file(path: &Path) -> Result<AntigravityState, String> {
         .map_err(|e| format!("Failed to parse {}: {}", path.display(), e))
 }
 
-/// 读取活跃状态 `monitor-state.json`
+/// Read active state `monitor-state.json`
 pub fn load_active_state(root: &Path) -> Option<AntigravityState> {
     let active_path = root.join("monitor-state.json");
     // Defense-in-depth: refuse to follow a symlinked monitor-state.json
@@ -781,7 +781,7 @@ pub fn load_active_state(root: &Path) -> Option<AntigravityState> {
     load_state_file(&active_path).ok()
 }
 
-/// 扫描并读取所有归档文件 `monitor-state.archive-YYYY-MM.json`
+/// Scan and read all archive files `monitor-state.archive-YYYY-MM.json`
 pub fn load_archive_states(root: &Path) -> Vec<AntigravityState> {
     let entries = match std::fs::read_dir(root) {
         Ok(e) => e,
@@ -816,9 +816,9 @@ pub fn load_archive_states(root: &Path) -> Vec<AntigravityState> {
     named.into_iter().map(|(_, s)| s).collect()
 }
 
-/// 合并多个状态：后者（active）覆盖前者（archive）中的相同 `session_id`
+/// Merge states: later (active) overrides earlier (archive) for the same `session_id`
 ///
-/// 与 antigravity-token-monitor 的 `mergeSessionMaps` 逻辑一致
+/// Matches antigravity-token-monitor  `mergeSessionMaps` 
 pub fn merge_states(
     archive_states: Vec<AntigravityState>,
     active: Option<AntigravityState>,
@@ -847,7 +847,7 @@ pub fn merge_states(
     }
 }
 
-/// 聚合计算项目汇总 — 纯函数，易于测试
+/// Aggregate project summary — pure function, easy to test
 pub fn compute_project_summary(state: &AntigravityState) -> AntigravityProjectSummary {
     let mut total_input = 0u64;
     let mut total_output = 0u64;
@@ -908,7 +908,7 @@ pub fn compute_project_summary(state: &AntigravityState) -> AntigravityProjectSu
     }
 }
 
-/// 加载并合并状态（可注入根路径，便于测试）
+/// Load and merge state (injectable root path for tests)
 pub fn load_antigravity_state_impl(root: &Path) -> Result<AntigravityState, String> {
     if root.exists() {
         let active = load_active_state(root);
