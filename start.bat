@@ -2,14 +2,14 @@
 setlocal EnableExtensions
 cd /d "%~dp0"
 
-title Wangquanti Coordinator
+title AI Cost History Hub
 set PYTHONUTF8=1
 set "AGENT_COST_DASHBOARD_DIR=%~dp0agent"
 
 echo.
 echo  ============================================
-echo   Wangquanti  Scheme A  unified launcher
-echo   CCHV shell + Cost Dashboard sidecar
+echo   AI Cost History Hub
+echo   History viewer + Cost Dashboard launcher
 echo  ============================================
 echo.
 

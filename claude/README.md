@@ -17,7 +17,7 @@ Browse, search, and analyze conversations from **Claude Code**, **Gemini CLI**, 
 
 [Website](https://local.github.io/claude-code-history-viewer/) · [Download](https://github.com/local/claude-code-history-viewer/releases) · [Report Bug](https://github.com/local/claude-code-history-viewer/issues)
 
-**Languages**: [English](README.md) | [한국어](README.ko.md) | [日本語](README.ja.md) | [中文 (简体)](README.zh-CN.md) | [中文 (繁體)](README.zh-TW.md)
+**Language**: English
 
 </div>
 

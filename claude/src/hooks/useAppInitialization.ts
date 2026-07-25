@@ -71,29 +71,21 @@ export function useAppInitialization(deps: {
     document.documentElement.classList.toggle("high-contrast", highContrast);
   }, [highContrast]);
 
-  // i18n language sync
+  // i18n language sync (English-only product UI)
   useEffect(() => {
-    const handleLanguageChange = (lng: string) => {
-      const currentLang = lng.startsWith("zh")
-        ? lng.includes("TW") || lng.includes("HK")
-          ? "zh-TW"
-          : "zh-CN"
-        : lng.split("-")[0];
-
-      if (
-        currentLang &&
-        currentLang !== language &&
-        ["en", "ko", "ja", "zh-CN", "zh-TW"].includes(currentLang)
-      ) {
-        useLanguageStore.setState({
-          language: currentLang as SupportedLanguage,
-        });
+    const pinEnglish = () => {
+      if (language !== "en") {
+        useLanguageStore.setState({ language: "en" as SupportedLanguage });
+      }
+      if (i18nInstance.language !== "en") {
+        void i18nInstance.changeLanguage("en");
       }
     };
 
-    i18nInstance.on("languageChanged", handleLanguageChange);
+    pinEnglish();
+    i18nInstance.on("languageChanged", pinEnglish);
     return () => {
-      i18nInstance.off("languageChanged", handleLanguageChange);
+      i18nInstance.off("languageChanged", pinEnglish);
     };
   }, [language, i18nInstance]);
 

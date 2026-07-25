@@ -1,98 +1,104 @@
-# Wangquanti · 方案 A 整合版
+# AI Cost History Hub
 
-**CCHV（会话历史）** + **Agent Cost Dashboard（费用看板）** 侧车整合。
+Local workspace for AI coding-agent **conversation history** and **API cost analytics**.
 
-## 目录
+Maintained by [@zheyan2517](https://github.com/zheyan2517).
+
+## Layout
 
 ```
-wangquanti/
-├── start.bat                 # 主入口：协调器 + 统一门户
-├── start-cost-dashboard.bat  # 仅费用看板
-├── start-all.bat             # 同 start.bat
-├── config.json               # 端口 / 路径配置
+ai-cost-history-hub/
+├── start.bat                 # Main entry: coordinator + unified portal
+├── start-cost-dashboard.bat  # Cost dashboard only
+├── start-all.bat             # Same as start.bat
+├── config.json               # Ports and path settings
 ├── scripts/
-│   └── coordinator.py        # 进程协调、健康检查、门户
-├── agent/                    # Agent Cost Dashboard
-└── claude/                   # CCHV（顶栏钱包按钮接入侧车）
+│   └── coordinator.py        # Process manager, health checks, portal
+├── agent/                    # Cost dashboard (Python)
+└── claude/                   # History viewer desktop app (Tauri)
 ```
 
-## 立即运行（无需 Rust）
+## Quick start (no Rust required)
 
-要求：**Python 3.12+**
+Requires **Python 3.12+**.
 
 ```bat
-E:\xiangmu\wangquanti\start.bat
+start.bat
 ```
 
-会：
+This will:
 
-1. 在 `127.0.0.1:8753`（占用则顺延）启动费用看板  
-2. 在 `http://127.0.0.1:8740/` 打开统一门户（内嵌看板 + 状态）  
-3. 仅绑定本机 loopback，不暴露局域网  
+1. Start the cost dashboard on `127.0.0.1:8753` (next free port if busy)
+2. Open the unified portal at `http://127.0.0.1:8740/` (embedded dashboard + status)
+3. Bind to loopback only (not exposed on the LAN)
 
-仅看板：
+Cost dashboard only:
 
 ```bat
-E:\xiangmu\wangquanti\start-cost-dashboard.bat
+start-cost-dashboard.bat
 ```
 
-状态 / 停止：
+Status / stop:
 
 ```bat
 python scripts\coordinator.py status
 python scripts\coordinator.py stop
 ```
 
-## 桌面 App（CCHV + 一键看板）
+## Desktop app (history viewer + one-click cost dashboard)
 
-需要：**Node.js、pnpm、Rust（cargo）、Python 3.12+**
+Requires **Node.js**, **pnpm**, **Rust (cargo)**, and **Python 3.12+**.
 
 ```bat
-cd E:\xiangmu\wangquanti\claude
+cd claude
 pnpm install
 pnpm tauri:dev
 ```
 
-启动后点顶栏 **钱包图标（Cost Dashboard）**：
+After launch, use the top-bar **wallet / Cost Dashboard** control to:
 
-- 自动启动或复用本机费用看板  
-- 浏览器打开 `http://127.0.0.1:<port>`  
-- 退出 App 时停止由 App 拉起的侧车进程  
+- Start or reuse the local cost dashboard
+- Open `http://127.0.0.1:<port>` in the browser
+- Stop the sidecar process when the app exits (if started by the app)
 
-环境变量（可选）：
+Optional environment variable:
 
-| 变量 | 含义 |
+| Variable | Meaning |
+|----------|---------|
+| `AGENT_COST_DASHBOARD_DIR` | Directory that contains `cost_dashboard.py` |
+
+## Security
+
+| Item | Behavior |
+|------|----------|
+| Listen address | Forced to `127.0.0.1` |
+| Data access | Read-only local agent session directories |
+| Process lifecycle | Managed by the coordinator and/or desktop app |
+| Logs | `.runtime/cost-dashboard.log` or system temp |
+
+## Key integration files
+
+| File | Role |
 |------|------|
-| `AGENT_COST_DASHBOARD_DIR` | 指向含 `cost_dashboard.py` 的目录 |
+| `scripts/coordinator.py` | Unified coordination and portal |
+| `claude/src-tauri/src/commands/cost_dashboard.rs` | Tauri sidecar commands |
+| `claude/src/services/costDashboard.ts` | Frontend API |
+| `claude/src/layouts/Header/Header.tsx` | Top-bar entry point |
 
-## 安全约定
+## Capabilities
 
-| 项 | 做法 |
-|----|------|
-| 监听地址 | 强制 `127.0.0.1` |
-| 数据 | 只读本地 agent session |
-| 进程 | 协调器 / CCHV 管理生命周期 |
-| 日志 | `.runtime/cost-dashboard.log` 或系统 temp |
+| Capability | Component |
+|------------|-----------|
+| Multi-provider sessions, messages, search | History viewer (`claude/`) |
+| Cross-agent cost, model, and tool billing views | Cost dashboard (`agent/`) |
 
-## 接入代码
+## Troubleshooting
 
-| 文件 | 作用 |
-|------|------|
-| `scripts/coordinator.py` | 统一协调与门户 |
-| `claude/src-tauri/src/commands/cost_dashboard.rs` | Tauri 侧车命令 |
-| `claude/src/services/costDashboard.ts` | 前端 API |
-| `claude/src/layouts/Header/Header.tsx` | 顶栏入口 |
+1. **Python not found** — Install Python 3.12+ and add it to `PATH`
+2. **Port in use** — Coordinator picks the next free port, or run `coordinator.py stop`
+3. **`pnpm tauri:dev` fails** — Install [Rust](https://rustup.rs) and WebView2 (usually preinstalled on Windows)
+4. **Portal iframe blank** — Open the cost dashboard URL from the sidebar directly
 
-## 职责
+## License
 
-| 能力 | 组件 |
-|------|------|
-| 多厂商会话 / 消息 / 搜索 | CCHV |
-| 跨 agent 费用 / 模型账单 | Cost Dashboard |
-
-## 故障排查
-
-1. **Python 找不到** → 安装 3.12+ 并加入 PATH  
-2. **端口占用** → 协调器自动换端口；或 `coordinator.py stop`  
-3. **CCHV 无法 tauri:dev** → 需安装 [Rust](https://rustup.rs) 与 WebView2（Windows 通常已有）  
-4. **门户 iframe 空白** → 直接打开侧栏中的看板 URL  
+MIT. See `LICENSE` files under `claude/` and `agent/`.

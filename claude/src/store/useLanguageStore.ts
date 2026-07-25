@@ -1,10 +1,8 @@
 import { create } from "zustand";
 import { toast } from "sonner";
 import { storageAdapter } from "@/services/storage";
-import { isTauri } from "@/utils/platform";
 import i18n from "../i18n";
 import type { SupportedLanguage } from "../i18n";
-import { languageLocaleMap } from "../i18n";
 
 interface LanguageStore {
   language: SupportedLanguage;
@@ -13,40 +11,24 @@ interface LanguageStore {
   loadLanguage: () => Promise<void>;
 }
 
-const getSupportedLanguage = (lang: string): SupportedLanguage => {
-  if (lang.startsWith("zh")) {
-    const region = lang.split("-")[1]?.toUpperCase();
-    if (region === "TW" || region === "HK" || region === "MO") {
-      return "zh-TW";
-    }
-    return "zh-CN";
-  }
-  const primary = lang.split("-")[0];
-  if (primary && primary in languageLocaleMap) {
-    return primary as SupportedLanguage;
-  }
-  return "en";
-};
+/** Product UI is English-only. */
+const getSupportedLanguage = (_lang?: string): SupportedLanguage => "en";
 
-const getCurrentLanguage = (): SupportedLanguage => {
-  const storedLang = localStorage.getItem("i18nextLng");
-  if (storedLang) {
-    return getSupportedLanguage(storedLang);
-  }
-  return getSupportedLanguage(i18n.language || "en");
-};
-
-export const useLanguageStore = create<LanguageStore>((set, get) => ({
-  language: getCurrentLanguage(),
+export const useLanguageStore = create<LanguageStore>((set) => ({
+  language: "en",
   isLoading: true,
 
   setLanguage: async (language) => {
-    await i18n.changeLanguage(language);
-    set({ language });
+    const next = getSupportedLanguage(language);
+    await i18n.changeLanguage(next);
+    set({ language: next });
 
     try {
-      const store = await storageAdapter.load("settings.json", { defaults: {}, autoSave: true });
-      await store.set("language", language);
+      const store = await storageAdapter.load("settings.json", {
+        defaults: {},
+        autoSave: true,
+      });
+      await store.set("language", next);
       await store.save();
     } catch {
       toast.error(i18n.t("common.settings.language.saveFailed"));
@@ -56,44 +38,22 @@ export const useLanguageStore = create<LanguageStore>((set, get) => ({
   loadLanguage: async () => {
     set({ isLoading: true });
     try {
-      let language: SupportedLanguage | null = null;
-
-      const i18nextLang = localStorage.getItem("i18nextLng");
-      if (i18nextLang) {
-        language = getSupportedLanguage(i18nextLang);
+      await i18n.changeLanguage("en");
+      try {
+        const store = await storageAdapter.load("settings.json", {
+          defaults: {},
+          autoSave: true,
+        });
+        await store.set("language", "en");
+        await store.save();
+      } catch {
+        // store optional
       }
-
-      if (!language) {
-        try {
-          const store = await storageAdapter.load("settings.json", { defaults: {}, autoSave: true });
-          language = (await store.get("language")) as SupportedLanguage | null;
-        } catch (e) {
-          console.log("Store not available:", e);
-        }
-      }
-
-      if (language) {
-        await i18n.changeLanguage(language);
-        set({ language });
-      } else {
-        let detectedLanguage: SupportedLanguage = "en";
-        try {
-          if (isTauri()) {
-            const { locale } = await import("@tauri-apps/plugin-os");
-            const systemLocale = (await locale()) || navigator.language || "en";
-            detectedLanguage = getSupportedLanguage(systemLocale);
-          } else {
-            detectedLanguage = getSupportedLanguage(navigator.language || "en");
-          }
-        } catch (error) {
-          console.log("Failed to get system locale:", error);
-          detectedLanguage = getSupportedLanguage(navigator.language || "en");
-        }
-        await get().setLanguage(detectedLanguage);
-      }
+      localStorage.setItem("i18nextLng", "en");
+      set({ language: "en" });
     } catch (error) {
       console.error("Failed to load language:", error);
-      set({ language: "en" }); // Fallback to English
+      set({ language: "en" });
     } finally {
       set({ isLoading: false });
     }

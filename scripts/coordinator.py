@@ -325,7 +325,7 @@ def portal_html(cost: dict, cchv: dict) -> str:
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Wangquanti · 统一入口</title>
+  <title>AI Cost History Hub</title>
   <style>
     :root {{
       color-scheme: light;
@@ -407,39 +407,39 @@ def portal_html(cost: dict, cchv: dict) -> str:
 <body>
   <header>
     <div>
-      <h1>Wangquanti · 统一工作台</h1>
-      <div class="muted">会话历史 + 费用看板 · 本机侧车（仅 127.0.0.1）</div>
+      <h1>AI Cost History Hub</h1>
+      <div class="muted">Session history + cost analytics · local sidecar (127.0.0.1 only)</div>
     </div>
-    <div class="muted">侧栏查看状态 · F5 刷新</div>
+    <div class="muted">Status in sidebar · press F5 to refresh</div>
   </header>
   <main>
     <aside>
       <div class="card">
-        <h2>费用看板</h2>
-        <span class="badge {"ok" if cost_ok else "warn"}">{"运行中" if cost_ok else "未就绪"}</span>
+        <h2>Cost Dashboard</h2>
+        <span class="badge {"ok" if cost_ok else "warn"}">{"Running" if cost_ok else "Not ready"}</span>
         <div class="muted" style="margin-top:8px">URL: <code>{cost_url}</code></div>
-        <a class="btn primary" href="{cost_url}" target="_blank" rel="noreferrer">新窗口打开</a>
-        <a class="btn" href="/api/restart-cost">重启看板</a>
+        <a class="btn primary" href="{cost_url}" target="_blank" rel="noreferrer">Open in new window</a>
+        <a class="btn" href="/api/restart-cost">Restart dashboard</a>
       </div>
       <div class="card">
-        <h2>历史查看器 (CCHV)</h2>
-        <span class="badge {"ok" if cchv_ready else "warn"}">{"可开发运行" if cchv_ready else "需安装依赖"}</span>
+        <h2>History Viewer</h2>
+        <span class="badge {"ok" if cchv_ready else "warn"}">{"Ready for dev" if cchv_ready else "Dependencies needed"}</span>
         <ul>
-          <li>路径: <code>{cchv.get("path")}</code></li>
-          <li>pnpm: {"有" if cchv.get("pnpmAvailable") else "无"}</li>
-          <li>cargo/Rust: {"有" if cchv.get("cargoAvailable") else "无"}</li>
-          <li>node_modules: {"有" if cchv.get("depsInstalled") else "无"}</li>
+          <li>Path: <code>{cchv.get("path")}</code></li>
+          <li>pnpm: {"yes" if cchv.get("pnpmAvailable") else "no"}</li>
+          <li>cargo/Rust: {"yes" if cchv.get("cargoAvailable") else "no"}</li>
+          <li>node_modules: {"yes" if cchv.get("depsInstalled") else "no"}</li>
         </ul>
-        <div class="muted" style="margin-top:8px">桌面开发启动：</div>
+        <div class="muted" style="margin-top:8px">Desktop dev command:</div>
         <code style="display:block;margin-top:6px;word-break:break-all">{cchv.get("devHint")}</code>
-        <p class="muted" style="margin-top:10px">桌面 App 顶栏「钱包」图标可一键打开费用看板（需 Tauri 运行）。</p>
+        <p class="muted" style="margin-top:10px">In the desktop app, use the wallet icon in the top bar to open the cost dashboard (Tauri required).</p>
       </div>
       <div class="card">
-        <h2>安全</h2>
+        <h2>Security</h2>
         <ul>
-          <li>侧车仅绑定 127.0.0.1</li>
-          <li>两侧只读本地 session</li>
-          <li>进程由协调器或 CCHV 管理</li>
+          <li>Sidecar binds to 127.0.0.1 only</li>
+          <li>Read-only access to local session data</li>
+          <li>Lifecycle managed by coordinator / desktop app</li>
         </ul>
       </div>
     </aside>
