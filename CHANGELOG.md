@@ -29,8 +29,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Clear first-run errors when Python is missing or ports are exhausted
+- `start.sh`, `start-cost-dashboard.sh`, `start-all.sh` for macOS / Linux
+- `python scripts/coordinator.py smoke` and `scripts/smoke_test.py`
+- GitHub Actions workflow `.github/workflows/smoke.yml`
+
 ### Planned
 
-- Cross-platform launcher scripts for macOS / Linux
 - Packaging notes for desktop builds
-- Automated smoke tests for coordinator health checks

@@ -39,7 +39,7 @@ def load_config() -> dict:
             "portRange": 20,
             "readyTimeoutSec": 15,
         },
-        "portal": {"host": "127.0.0.1", "port": 8740},
+        "portal": {"host": "127.0.0.1", "port": 8740, "portRange": 20},
         "paths": {
             "agentDir": "agent",
             "claudeDir": "claude",
@@ -61,16 +61,72 @@ def load_config() -> dict:
     return defaults
 
 
+def python_not_found_message() -> str:
+    if os.name == "nt":
+        return (
+            "Python 3.12+ was not found on PATH.\n"
+            "\n"
+            "Next steps (Windows):\n"
+            "  1. Install Python 3.12+ from https://www.python.org/downloads/\n"
+            "  2. During setup, enable: \"Add python.exe to PATH\"\n"
+            "  3. Open a NEW terminal and verify:\n"
+            "       py -3 --version\n"
+            "       python --version\n"
+            "  4. Re-run start.bat or: python scripts/coordinator.py start --portal\n"
+            "\n"
+            "If Python is installed but not on PATH, either reinstall with PATH enabled\n"
+            "or add the install folder to your user PATH environment variable."
+        )
+    return (
+        "Python 3.12+ was not found on PATH.\n"
+        "\n"
+        "Next steps (macOS / Linux):\n"
+        "  1. Install Python 3.12+, for example:\n"
+        "       macOS:  brew install python@3.12\n"
+        "       Ubuntu: sudo apt update && sudo apt install python3\n"
+        "  2. Verify:\n"
+        "       python3 --version\n"
+        "  3. Re-run: ./start.sh\n"
+        "     or: python3 scripts/coordinator.py start --portal"
+    )
+
+
 def find_python() -> list[str]:
+    candidates: list[list[str]] = []
     if os.name == "nt":
         py = shutil.which("py")
         if py:
-            return [py, "-3"]
-    for name in ("python", "python3"):
+            candidates.append([py, "-3"])
+    for name in ("python3", "python"):
         path = shutil.which(name)
         if path:
-            return [path]
-    raise RuntimeError("Python 3.12+ not found on PATH (need python or py -3)")
+            candidates.append([path])
+
+    last_err = ""
+    for cmd in candidates:
+        try:
+            out = subprocess.run(
+                [*cmd, "-c", "import sys; print(f'{sys.version_info[0]}.{sys.version_info[1]}')"],
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            if out.returncode != 0:
+                last_err = (out.stderr or out.stdout or "").strip()
+                continue
+            ver = (out.stdout or "").strip()
+            major_s, _, minor_s = ver.partition(".")
+            major, minor = int(major_s or "0"), int(minor_s or "0")
+            if (major, minor) < (3, 12):
+                last_err = f"Found {' '.join(cmd)} version {ver}, need 3.12+"
+                continue
+            return cmd
+        except (OSError, ValueError) as e:
+            last_err = str(e)
+            continue
+
+    detail = f"\nDetails: {last_err}" if last_err else ""
+    raise RuntimeError(python_not_found_message() + detail)
 
 
 def agent_dir(cfg: dict) -> Path:
@@ -102,11 +158,27 @@ def http_ok(url: str, timeout: float = 1.5) -> bool:
         return False
 
 
-def pick_port(host: str, start: int, span: int) -> int:
+def pick_port(host: str, start: int, span: int, *, label: str = "service") -> int:
     for port in range(start, start + span):
         if not port_open(host, port):
+            if port != start:
+                print(
+                    f"[info] Preferred {label} port {start} is busy; using {port} instead.",
+                    file=sys.stderr,
+                )
             return port
-    raise RuntimeError(f"No free port in {start}-{start + span - 1}")
+    end = start + span - 1
+    raise RuntimeError(
+        f"No free loopback port for {label} in range {start}-{end} on {host}.\n"
+        "\n"
+        "Next steps:\n"
+        f"  1. Stop an existing instance:  python scripts/coordinator.py stop\n"
+        f"  2. Check what is using the ports, e.g.:\n"
+        f"       Windows:  netstat -ano | findstr :{start}\n"
+        f"       macOS/Linux:  lsof -iTCP:{start} -sTCP:LISTEN\n"
+        f"  3. Or edit config.json ports under costDashboard / portal.\n"
+        f"  4. Then re-run the launcher."
+    )
 
 
 def wait_ready(host: str, port: int, timeout_sec: float) -> bool:
@@ -230,7 +302,7 @@ def ensure_cost_dashboard(cfg: dict, open_browser: bool = False) -> dict:
             webbrowser.open(info["url"])
         return info
 
-    port = pick_port(host, preferred, span)
+    port = pick_port(host, preferred, span, label="cost dashboard")
     a_dir = agent_dir(cfg)
     script = a_dir / cfg["paths"]["dashboardScript"]
     python_cmd = find_python()
@@ -508,18 +580,31 @@ class PortalHandler(BaseHTTPRequestHandler):
         self.send_error(404)
 
 
-def serve_portal(cfg: dict, cost_info: dict) -> None:
+def serve_portal(cfg: dict, cost_info: dict, open_browser: bool = True) -> None:
     host = cfg["portal"]["host"]
-    port = int(cfg["portal"]["port"])
+    preferred = int(cfg["portal"]["port"])
+    span = int(cfg.get("portal", {}).get("portRange", 20))
+    port = pick_port(host, preferred, span, label="portal")
     handler = type(
         "BoundPortalHandler",
         (PortalHandler,),
         {"cfg": cfg, "cost_info": cost_info},
     )
-    httpd = ThreadingHTTPServer((host, port), handler)
+    try:
+        httpd = ThreadingHTTPServer((host, port), handler)
+    except OSError as e:
+        raise RuntimeError(
+            f"Could not bind portal on {host}:{port}: {e}\n"
+            "\n"
+            "Next steps:\n"
+            "  1. python scripts/coordinator.py stop\n"
+            "  2. Change portal.port in config.json\n"
+            "  3. Re-run the launcher"
+        ) from e
     url = f"http://{host}:{port}/"
     print(f"[portal] serving {url}")
-    webbrowser.open(url)
+    if open_browser:
+        webbrowser.open(url)
     try:
         httpd.serve_forever()
     except KeyboardInterrupt:
@@ -544,13 +629,38 @@ def cmd_start(cfg: dict, with_portal: bool, open_browser: bool) -> int:
     print(json.dumps(info, indent=2, ensure_ascii=False))
     if with_portal:
         # keep child alive: portal thread blocks main
-        serve_portal(cfg, info)
+        serve_portal(cfg, info, open_browser=open_browser)
     return 0
 
 
 def cmd_stop() -> int:
     stopped = stop_cost_dashboard()
     print(json.dumps({"stopped": stopped}, indent=2))
+    return 0
+
+
+def cmd_smoke(cfg: dict) -> int:
+    """Start cost dashboard, verify HTTP 200, stop — exit 0/1 for CI."""
+    print("[smoke] checking Python…")
+    py = find_python()
+    print(f"[smoke] python ok: {' '.join(py)}")
+
+    print("[smoke] starting cost dashboard…")
+    stop_cost_dashboard()
+    info = ensure_cost_dashboard(cfg, open_browser=False)
+    url = info["url"].rstrip("/") + "/"
+    print(f"[smoke] probing {url}")
+    if not http_ok(url, timeout=3.0):
+        stop_cost_dashboard()
+        print(f"[smoke] FAIL: no HTTP 200 from {url}", file=sys.stderr)
+        return 1
+
+    print("[smoke] stopping…")
+    stop_cost_dashboard()
+    # brief settle
+    time.sleep(0.3)
+    print("[smoke] PASS")
+    print(json.dumps({"ok": True, "url": info["url"], "port": info["port"]}, indent=2))
     return 0
 
 
@@ -569,6 +679,10 @@ def main(argv: list[str] | None = None) -> int:
     sub.add_parser("stop", help="Stop managed cost dashboard")
     sub.add_parser("status", help="Print readiness JSON")
     sub.add_parser("open-cost", help="Ensure cost dashboard and open browser")
+    sub.add_parser(
+        "smoke",
+        help="Start cost dashboard, check HTTP 200, stop (for local/CI checks)",
+    )
 
     args = parser.parse_args(argv)
     cfg = load_config()
@@ -588,6 +702,8 @@ def main(argv: list[str] | None = None) -> int:
             info = ensure_cost_dashboard(cfg, open_browser=True)
             print(json.dumps(info, indent=2, ensure_ascii=False))
             return 0
+        if args.cmd == "smoke":
+            return cmd_smoke(cfg)
     except Exception as e:  # noqa: BLE001
         print(f"[error] {e}", file=sys.stderr)
         return 1

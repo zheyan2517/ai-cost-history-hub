@@ -7,14 +7,14 @@ Plans for AI Cost History Hub. Items may move based on feedback.
 - [x] Local cost dashboard + portal launcher
 - [x] English-only docs and UI language pin
 - [x] Loopback-only defaults and security notes
-- [ ] One-command health check for local verification
-- [ ] Better first-run errors when Python / ports are missing
+- [x] One-command health check (`coordinator.py smoke`)
+- [x] Better first-run errors when Python / ports are missing
+- [x] macOS / Linux start scripts
 
 ## Next
 
-- [ ] macOS / Linux start scripts
 - [ ] Desktop packaging notes (Windows installer / portable)
-- [ ] Lightweight tests for coordinator start/stop
+- [ ] Broader automated regression coverage
 
 ## Later
 

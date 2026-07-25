@@ -33,14 +33,15 @@ Local workspace for AI coding-agent **conversation history** and **API cost anal
 
 ```
 ai-cost-history-hub/
-├── start.bat                 # Main entry: coordinator + portal
-├── start-cost-dashboard.bat  # Cost dashboard only
-├── start-all.bat             # Same as start.bat
-├── config.json               # Ports and path settings
+├── start.bat / start.sh              # Main entry: coordinator + portal
+├── start-cost-dashboard.bat / .sh    # Cost dashboard only
+├── start-all.bat / start-all.sh      # Same as start
+├── config.json                       # Ports and path settings
 ├── scripts/
-│   └── coordinator.py        # Process manager, health checks, portal
-├── agent/                    # Cost analytics service (Python)
-├── claude/                   # History viewer desktop app (Tauri)
+│   ├── coordinator.py                # Process manager, health checks, portal
+│   └── smoke_test.py                 # Lightweight start → HTTP 200 → stop
+├── agent/                            # Cost analytics service (Python)
+├── claude/                           # History viewer desktop app (Tauri)
 ├── docs/
 ├── CONTRIBUTING.md
 ├── SECURITY.md
@@ -51,16 +52,25 @@ ai-cost-history-hub/
 
 ## Quick start (no Rust required)
 
-Requires **Python 3.12+**.
+Requires **Python 3.12+** on your `PATH`.
+
+**Windows:**
 
 ```bat
 start.bat
 ```
 
+**macOS / Linux:**
+
+```bash
+chmod +x start.sh start-cost-dashboard.sh start-all.sh
+./start.sh
+```
+
 This will:
 
 1. Start the cost dashboard on `127.0.0.1:8753` (next free port if busy)
-2. Open the portal at `http://127.0.0.1:8740/`
+2. Open the portal on `127.0.0.1:8740` (next free port if busy)
 3. Bind to loopback only
 
 Cost dashboard only:
@@ -69,11 +79,17 @@ Cost dashboard only:
 start-cost-dashboard.bat
 ```
 
-Status / stop:
+```bash
+./start-cost-dashboard.sh
+```
 
-```bat
-python scripts\coordinator.py status
-python scripts\coordinator.py stop
+Status / stop / smoke test:
+
+```bash
+python scripts/coordinator.py status
+python scripts/coordinator.py stop
+python scripts/coordinator.py smoke
+# or: python scripts/smoke_test.py
 ```
 
 ### Session data locations (read-only)
@@ -146,10 +162,19 @@ Report vulnerabilities privately — see [SECURITY.md](SECURITY.md).
 
 ## Troubleshooting
 
-1. **Python not found** — Install Python 3.12+ and add it to `PATH`
-2. **Port in use** — Coordinator picks the next free port, or run `coordinator.py stop`
+1. **Python not found**
+   - Install **Python 3.12+** from https://www.python.org/downloads/
+   - Windows: enable **Add python.exe to PATH**, then open a **new** terminal
+   - Verify: `py -3 --version` or `python3 --version`
+   - Launchers print the same steps when Python is missing
+2. **Port in use (8753 / 8740)**
+   - Coordinator auto-selects the next free port in range (see `config.json`)
+   - Stop a managed instance: `python scripts/coordinator.py stop`
+   - Windows: `netstat -ano | findstr ":8753 :8740"`
+   - macOS/Linux: `lsof -iTCP:8753 -sTCP:LISTEN`
 3. **`pnpm tauri:dev` fails** — Install [Rust](https://rustup.rs) and WebView2 (usually preinstalled on Windows)
 4. **Portal iframe blank** — Open the cost dashboard URL from the sidebar directly
+5. **Smoke test** — `python scripts/coordinator.py smoke` (exit 0 = OK)
 
 ## Contributing
 

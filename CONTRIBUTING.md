@@ -22,7 +22,8 @@ start.bat
 
 ```bash
 # macOS / Linux
-python3 scripts/coordinator.py start --portal
+chmod +x start.sh start-cost-dashboard.sh
+./start.sh
 ```
 
 Useful commands:
@@ -31,6 +32,7 @@ Useful commands:
 python scripts/coordinator.py status
 python scripts/coordinator.py stop
 python scripts/coordinator.py open-cost
+python scripts/coordinator.py smoke
 ```
 
 ### Desktop history viewer (optional)

@@ -7,7 +7,8 @@
   },
   "portal": {
     "host": "127.0.0.1",
-    "port": 8740
+    "port": 8740,
+    "portRange": 20
   },
   "paths": {
     "agentDir": "agent",
