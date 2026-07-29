@@ -141,16 +141,22 @@ mod tests {
     use std::os::unix::fs::symlink;
     use tempfile::TempDir;
 
-    /// Run `body` with `$HOME` temporarily pointed at `home`, restoring it after.
-    /// Serialized because `is_safe_session_path` resolves the home dir from the
-    /// process environment (other suites also override `HOME`).
+    /// Run `body` with both home overrides temporarily pointed at `home`.
+    /// Serialized because `is_safe_session_path` resolves the home dir from
+    /// process-global environment variables (other suites also override them).
     fn with_home<T>(home: &std::path::Path, body: impl FnOnce() -> T) -> T {
-        let prev = std::env::var_os("HOME");
+        let prev_home = std::env::var_os("HOME");
+        let prev_test_home = std::env::var_os("CCHV_TEST_HOME");
         std::env::set_var("HOME", home);
+        std::env::set_var("CCHV_TEST_HOME", home);
         let out = body();
-        match prev {
+        match prev_home {
             Some(v) => std::env::set_var("HOME", v),
             None => std::env::remove_var("HOME"),
+        }
+        match prev_test_home {
+            Some(v) => std::env::set_var("CCHV_TEST_HOME", v),
+            None => std::env::remove_var("CCHV_TEST_HOME"),
         }
         out
     }
@@ -205,8 +211,6 @@ mod tests {
     #[serial]
     fn test_safe_session_path_allows_kimi_sessions() {
         let temp = TempDir::new().unwrap();
-        let old_home = std::env::var_os("HOME");
-        std::env::set_var("HOME", temp.path());
 
         let session_dir = temp
             .path()
@@ -218,13 +222,7 @@ mod tests {
         let session_file = session_dir.join("context.jsonl");
         std::fs::write(&session_file, "{}\n").unwrap();
 
-        let result = is_safe_session_path(&session_file);
-
-        if let Some(home) = old_home {
-            std::env::set_var("HOME", home);
-        } else {
-            std::env::remove_var("HOME");
-        }
+        let result = with_home(temp.path(), || is_safe_session_path(&session_file));
 
         assert!(result.is_ok());
     }
