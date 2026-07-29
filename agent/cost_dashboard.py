@@ -12,12 +12,38 @@ from collections import defaultdict
 from datetime import datetime
 import html
 import http.server
+import ipaddress
 import socketserver
 import argparse
 import shlex
 import shutil
 import sys
 from typing import TypedDict, DefaultDict
+
+
+LOOPBACK_HOSTNAMES = {"localhost"}
+
+
+def is_loopback_host(host: str) -> bool:
+    """Return True when *host* can only be reached from this machine."""
+    normalized = host.strip().lower().rstrip(".")
+    if normalized in LOOPBACK_HOSTNAMES:
+        return True
+    try:
+        return ipaddress.ip_address(normalized).is_loopback
+    except ValueError:
+        return False
+
+
+def require_loopback_host(host: str) -> str:
+    """Validate that *host* is loopback-only, rejecting external exposure."""
+    if not is_loopback_host(host):
+        raise argparse.ArgumentTypeError(
+            f"Refusing to bind dashboard to '{host}'. "
+            "This dashboard serves local session data without authentication; "
+            "use 127.0.0.1, ::1, or localhost."
+        )
+    return host
 
 
 # Type definitions
@@ -2396,9 +2422,10 @@ def main():
     parser.add_argument(
         "-H",
         "--host",
-        type=str,
+        type=require_loopback_host,
         default="127.0.0.1",
-        help="Host to bind to (default: 127.0.0.1 — loopback only)",
+        help="Host to bind to (default: 127.0.0.1 — loopback only; "
+        "non-loopback addresses are rejected)",
     )
     parser.add_argument(
         "-p", "--port", type=int, default=8753, help="Port to serve on (default: 8753)"

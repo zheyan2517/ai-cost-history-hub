@@ -67,12 +67,16 @@ cd ai-cost-history-hub
 
 # Use a custom port
 ./cost_dashboard.py --port 3000
+```
 
-# Bind to all interfaces (accessible from network)
+The dashboard binds to loopback (`127.0.0.1`) **only**. It serves local agent
+session data (project names, prompts, file paths, tool calls) without
+authentication, so `--host` rejects non-loopback values such as `0.0.0.0` or
+LAN addresses:
+
+```bash
+# Rejected — would expose session data to the network without authentication
 ./cost_dashboard.py --host 0.0.0.0
-
-# Custom host and port
-./cost_dashboard.py -H 0.0.0.0 -p 3000
 ```
 
 On Windows, you can also double-click `start.bat`.
