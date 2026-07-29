@@ -39,7 +39,7 @@ pub struct PresetInput {
 
 /// Get the presets folder path (~/.claude-history-viewer/presets)
 fn get_presets_folder() -> Result<PathBuf, String> {
-    let home = dirs::home_dir().ok_or("Could not find home directory")?;
+    let home = crate::utils::home_dir().ok_or("Could not find home directory")?;
     Ok(home.join(".claude-history-viewer").join("presets"))
 }
 
@@ -267,7 +267,7 @@ mod tests {
     /// `env::set_var("HOME")` is process-global and not thread-safe.
     fn setup_test_env() -> TempDir {
         let temp_dir = TempDir::new().unwrap();
-        env::set_var("HOME", temp_dir.path());
+        env::set_var("CCHV_TEST_HOME", temp_dir.path());
         temp_dir
     }
 
@@ -275,9 +275,17 @@ mod tests {
     fn test_get_presets_folder() {
         let _temp = setup_test_env();
         let folder = get_presets_folder().unwrap();
-        assert!(folder
-            .to_string_lossy()
-            .contains(".claude-history-viewer/presets"));
+        assert_eq!(
+            folder.file_name().and_then(|name| name.to_str()),
+            Some("presets")
+        );
+        assert_eq!(
+            folder
+                .parent()
+                .and_then(|parent| parent.file_name())
+                .and_then(|name| name.to_str()),
+            Some(".claude-history-viewer")
+        );
     }
 
     #[test]

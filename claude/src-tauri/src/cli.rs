@@ -144,7 +144,7 @@ pub fn parse_session_hint_from_url(url: &tauri::Url) -> Option<SessionHint> {
                 value: s,
             })
         }
-        "claude-code-history-viewer" => {
+        "ai-cost-history-hub" | "claude-code-history-viewer" => {
             let host = url.host_str()?;
             let raw_path = url.path().trim_start_matches('/');
             if raw_path.is_empty() {
@@ -472,27 +472,24 @@ mod tests {
 
     #[test]
     fn parses_custom_scheme_folder_url() {
-        let hint =
-            parse_session_hint_from_url(&url("ai-cost-history-hub://session-folder/demo"))
-                .expect("hint");
+        let hint = parse_session_hint_from_url(&url("ai-cost-history-hub://session-folder/demo"))
+            .expect("hint");
         assert_eq!(hint.kind, SessionHintKind::Folder);
         assert_eq!(hint.value, "demo");
     }
 
     #[test]
     fn parses_custom_scheme_title_with_spaces() {
-        let hint = parse_session_hint_from_url(&url(
-            "ai-cost-history-hub://session-title/auth%20bug",
-        ))
-        .expect("hint");
+        let hint =
+            parse_session_hint_from_url(&url("ai-cost-history-hub://session-title/auth%20bug"))
+                .expect("hint");
         assert_eq!(hint.kind, SessionHintKind::Title);
         assert_eq!(hint.value, "auth bug");
     }
 
     #[test]
     fn rejects_custom_scheme_with_bad_uuid_host() {
-        let hint =
-            parse_session_hint_from_url(&url("ai-cost-history-hub://session/not-a-uuid"));
+        let hint = parse_session_hint_from_url(&url("ai-cost-history-hub://session/not-a-uuid"));
         assert!(hint.is_none());
     }
 
@@ -504,8 +501,7 @@ mod tests {
 
     #[test]
     fn rejects_custom_scheme_with_empty_path() {
-        let hint =
-            parse_session_hint_from_url(&url("ai-cost-history-hub://session-folder/"));
+        let hint = parse_session_hint_from_url(&url("ai-cost-history-hub://session-folder/"));
         assert!(hint.is_none());
     }
 
@@ -531,19 +527,17 @@ mod tests {
     fn title_preserves_literal_plus_character() {
         // A raw `+` in a URL path segment must stay `+`, not become a space.
         // `+` → space is form-urlencoded semantics, not path semantics.
-        let hint = parse_session_hint_from_url(&url(
-            "ai-cost-history-hub://session-title/C%2B%2B%20bug",
-        ))
-        .expect("hint");
+        let hint =
+            parse_session_hint_from_url(&url("ai-cost-history-hub://session-title/C%2B%2B%20bug"))
+                .expect("hint");
         assert_eq!(hint.value, "C++ bug");
     }
 
     #[test]
     fn title_plus_is_not_decoded_to_space() {
         // Explicit bare `+` (not `%2B`) stays literal.
-        let hint =
-            parse_session_hint_from_url(&url("ai-cost-history-hub://session-title/one+two"))
-                .expect("hint");
+        let hint = parse_session_hint_from_url(&url("ai-cost-history-hub://session-title/one+two"))
+            .expect("hint");
         assert_eq!(hint.value, "one+two");
     }
 }

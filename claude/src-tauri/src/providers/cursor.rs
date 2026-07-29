@@ -22,7 +22,7 @@ pub fn detect() -> Option<ProviderInfo> {
 
 /// Get Cursor user data path
 pub fn get_base_path() -> Option<PathBuf> {
-    let home = dirs::home_dir()?;
+    let home = crate::utils::home_dir()?;
 
     #[cfg(target_os = "macos")]
     let base = home.join("Library/Application Support/Cursor/User");

@@ -41,7 +41,7 @@ pub fn get_base_path() -> Option<String> {
         }
     }
 
-    let default = dirs::home_dir()?.join(".kimi");
+    let default = crate::utils::home_dir()?.join(".kimi");
     if default.exists() {
         let normalized = default.canonicalize().unwrap_or(default);
         Some(normalized.to_string_lossy().to_string())
@@ -734,7 +734,7 @@ mod tests {
     fn get_base_path_returns_none_when_default_dir_absent() {
         let _share = EnvVarGuard::remove("KIMI_SHARE_DIR");
         let _home_env = EnvVarGuard::remove("KIMI_HOME");
-        if dirs::home_dir()
+        if crate::utils::home_dir()
             .map(|h| h.join(".kimi").exists())
             .unwrap_or(false)
         {

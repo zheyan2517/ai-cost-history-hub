@@ -34,7 +34,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Clear first-run errors when Python is missing or ports are exhausted
 - `start.sh`, `start-cost-dashboard.sh`, `start-all.sh` for macOS / Linux
 - `python scripts/coordinator.py smoke` and `scripts/smoke_test.py`
+- Isolated clean-install verification and stable synthetic fixtures for all
+  supported providers
 - GitHub Actions workflow `.github/workflows/smoke.yml`
+
+### Changed
+
+- Unified the repository and desktop viewer on source-only version `0.1.0`
+- Disabled updater metadata and artifact generation until signed release
+  assets are published
 
 ### Planned
 

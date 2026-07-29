@@ -42,6 +42,10 @@ use crate::commands::{
         get_settings_by_scope, read_text_file, save_mcp_servers, save_screenshot, save_settings,
         write_text_file,
     },
+    cost_dashboard::{
+        cost_dashboard_status, open_cost_dashboard, shutdown_cost_dashboard, stop_cost_dashboard,
+        CostDashboardState,
+    },
     feedback::{get_system_info, open_github_issues, send_feedback},
     mcp_presets::{delete_mcp_preset, get_mcp_preset, load_mcp_presets, save_mcp_preset},
     metadata::{
@@ -75,10 +79,6 @@ use crate::commands::{
     update::force_quit_and_relaunch,
     watcher::{start_file_watcher, stop_file_watcher},
     wsl::{detect_wsl_distros, is_wsl_available},
-    cost_dashboard::{
-        cost_dashboard_status, open_cost_dashboard, shutdown_cost_dashboard, stop_cost_dashboard,
-        CostDashboardState,
-    },
 };
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -838,7 +838,7 @@ fn resolve_auth_token(args: &[String]) -> Option<(String, AuthTokenSource)> {
 /// Persist auto-generated token to a local file instead of logging the full secret.
 #[cfg(feature = "webui-server")]
 fn write_generated_token_file(token: &str) -> Option<std::path::PathBuf> {
-    let home = dirs::home_dir()?;
+    let home = crate::utils::home_dir()?;
     let dir = home.join(".claude-history-viewer");
     std::fs::create_dir_all(&dir).ok()?;
     let path = dir.join("webui-token.txt");
@@ -919,7 +919,7 @@ fn collect_watch_paths() -> Vec<std::path::PathBuf> {
 
     let mut paths: Vec<PathBuf> = Vec::new();
 
-    if let Some(home) = dirs::home_dir() {
+    if let Some(home) = crate::utils::home_dir() {
         let claude_projects = home.join(".claude").join("projects");
         if claude_projects.is_dir() {
             paths.push(claude_projects);

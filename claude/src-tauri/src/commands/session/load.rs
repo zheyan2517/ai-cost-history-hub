@@ -2693,11 +2693,18 @@ mod tests {
         std::fs::create_dir_all(&project_dir).unwrap();
         let actual_cwd = temp_dir.path().join("claude_prompt_design");
         std::fs::create_dir_all(&actual_cwd).unwrap();
-        let actual_cwd = actual_cwd.to_string_lossy();
+        let actual_cwd = actual_cwd.to_string_lossy().into_owned();
 
         let content = format!(
-            r#"{{"uuid":"uuid-1","sessionId":"session-1","timestamp":"2025-06-26T10:00:00Z","type":"user","cwd":"{actual_cwd}","message":{{"role":"user","content":"Hello world"}}}}
-"#
+            "{}\n",
+            serde_json::json!({
+                "uuid": "uuid-1",
+                "sessionId": "session-1",
+                "timestamp": "2025-06-26T10:00:00Z",
+                "type": "user",
+                "cwd": actual_cwd,
+                "message": {"role": "user", "content": "Hello world"}
+            })
         );
         let file_path = project_dir.join("test.jsonl");
         let mut file = File::create(&file_path).unwrap();
@@ -2714,13 +2721,23 @@ mod tests {
     #[tokio::test]
     async fn test_load_project_sessions_prefers_verified_folder_over_stale_cwd() {
         let temp_dir = TempDir::new().unwrap();
-        // Folder name decodes to an existing directory (/usr/lib); the
-        // `.claude/projects/` marker must be present for verified decoding.
+        // The `.claude/projects/` marker must be present for verified decoding.
+        let verified_path = temp_dir.path().join("verified").join("lib");
+        std::fs::create_dir_all(&verified_path).unwrap();
+        let verified_path = verified_path.canonicalize().unwrap();
+        let mut raw = verified_path.to_string_lossy().into_owned();
+        if let Some(stripped) = raw.strip_prefix("\\\\?\\") {
+            raw = stripped.to_string();
+        }
+        let mut encoded = raw.replace(['/', '\\', ':'], "-");
+        if !encoded.starts_with('-') {
+            encoded.insert(0, '-');
+        }
         let project_dir = temp_dir
             .path()
             .join(".claude")
             .join("projects")
-            .join("-usr-lib");
+            .join(encoded);
         std::fs::create_dir_all(&project_dir).unwrap();
 
         // Stale embedded cwd simulates a session moved into this folder by hand.

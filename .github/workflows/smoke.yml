@@ -8,12 +8,14 @@ on:
   workflow_dispatch:
 
 jobs:
-  coordinator-smoke:
+  source-smoke:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Run coordinator smoke test
-        run: python scripts/coordinator.py smoke
+      - name: Run one-command smoke test
+        run: python scripts/smoke_test.py
+      - name: Run isolated clean-install verification
+        run: python scripts/clean_install_test.py

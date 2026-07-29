@@ -29,7 +29,7 @@ pub fn detect() -> Option<ProviderInfo> {
 
 /// Get the `CodeBuddy` projects base path (`~/.codebuddy/projects`)
 pub fn get_base_path() -> Option<String> {
-    let home = dirs::home_dir()?;
+    let home = crate::utils::home_dir()?;
     let projects_path = home.join(".codebuddy").join("projects");
     if projects_path.exists() && projects_path.is_dir() {
         Some(projects_path.to_string_lossy().to_string())
@@ -371,7 +371,7 @@ pub fn search(query: &str, limit: usize) -> Result<Vec<ClaudeMessage>, String> {
 
 /// Validate that a session path is within `~/.codebuddy/projects`
 fn validate_session_path(path: &Path) -> Result<(), String> {
-    let home = dirs::home_dir().ok_or("Could not find home directory")?;
+    let home = crate::utils::home_dir().ok_or("Could not find home directory")?;
     let allowed = home.join(".codebuddy").join("projects");
 
     let canonical = if path.exists() {
@@ -993,12 +993,10 @@ mod tests {
     /// prevent path-traversal-style reads of arbitrary directories on disk.
     #[test]
     fn load_sessions_rejects_path_outside_codebuddy_root() {
-        // /tmp definitely exists on macOS/Linux and is outside the codebuddy
-        // root. The function checks existence first, so we need a real path.
-        let result = load_sessions("/tmp", false);
-        // Either errors with the "outside" message, or — if /tmp doesn't
-        // canonicalize on this platform — errors with a canonicalize message.
-        // Both are acceptable; what we want to guard against is `Ok(...)`.
+        // A real temporary directory is outside the CodeBuddy root on every
+        // supported platform. The function checks existence first.
+        let temp = tempfile::tempdir().expect("tempdir");
+        let result = load_sessions(&temp.path().to_string_lossy(), false);
         assert!(
             result.is_err(),
             "path outside codebuddy root must error, got: {result:?}"
@@ -1162,12 +1160,17 @@ mod tests {
         std::fs::create_dir(&project_dir).expect("create project");
 
         let session = project_dir.join("s.jsonl");
+        let expected_cwd = if cfg!(windows) {
+            r"C:\Users\rassyan\WebstormProjects\claude-code-history-viewer"
+        } else {
+            "/Users/rassyan/WebstormProjects/claude-code-history-viewer"
+        };
         let line = json!({
             "type": "message",
             "role": "user",
             "sessionId": "s1",
             "timestamp": 1_700_000_000_000i64,
-            "cwd": "/Users/rassyan/WebstormProjects/claude-code-history-viewer",
+            "cwd": expected_cwd,
             "content": [{"type": "input_text", "text": "hi"}],
         });
         std::fs::write(&session, format!("{line}\n")).expect("write");
@@ -1179,7 +1182,7 @@ mod tests {
             "display name must keep the full hyphenated project leaf"
         );
         assert_eq!(
-            projects[0].actual_path, "/Users/rassyan/WebstormProjects/claude-code-history-viewer",
+            projects[0].actual_path, expected_cwd,
             "actual_path must be the real cwd, not the lossy storage path"
         );
     }
@@ -1213,7 +1216,12 @@ mod tests {
         // leading `/` and join with `-`, mirroring how CodeBuddy actually
         // names project directories on disk.
         let real_leaf_str = real_leaf.to_string_lossy().to_string();
-        let encoded = real_leaf_str.trim_start_matches('/').replace('/', "-");
+        let real_leaf_str = real_leaf_str
+            .strip_prefix("\\\\?\\")
+            .unwrap_or(&real_leaf_str);
+        let encoded = real_leaf_str
+            .trim_start_matches(['/', '\\'])
+            .replace(['/', '\\', ':'], "-");
         let project_dir = projects_root.join(&encoded);
         std::fs::create_dir(&project_dir).expect("create project");
 

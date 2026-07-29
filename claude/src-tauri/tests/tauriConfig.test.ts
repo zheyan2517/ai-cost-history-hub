@@ -236,22 +236,12 @@ describe('Tauri Configuration Tests', () => {
     });
 
     describe('Updater Plugin', () => {
-      it('should have updater plugin enabled', () => {
+      it('should keep updater disabled until signed release artifacts exist', () => {
         expect(config.plugins.updater).toBeDefined();
-        expect(config.plugins.updater.active).toBe(true);
+        expect(config.plugins.updater.active).toBe(false);
         expect(typeof config.plugins.updater.active).toBe('boolean');
-      });
-
-      it('should have valid GitHub update endpoints', () => {
-        expect(Array.isArray(config.plugins.updater.endpoints)).toBe(true);
-        expect(config.plugins.updater.endpoints.length).toBeGreaterThan(0);
-        
-        config.plugins.updater.endpoints.forEach((endpoint: string) => {
-          expect(endpoint).toMatch(/^https:\/\//); // HTTPS required
-          expect(endpoint).toContain('github.com');
-          expect(endpoint).toContain('zheyan2517/ai-cost-history-hub');
-          expect(endpoint).toContain('latest.json');
-        });
+        expect(config.plugins.updater.endpoints).toEqual([]);
+        expect(config.plugins.updater.pubkey).toBe('');
       });
 
       it('should have update dialog disabled', () => {
@@ -259,18 +249,8 @@ describe('Tauri Configuration Tests', () => {
         expect(typeof config.plugins.updater.dialog).toBe('boolean');
       });
 
-      it('should have valid minisign public key', () => {
-        expect(config.plugins.updater.pubkey).toBeDefined();
-        expect(typeof config.plugins.updater.pubkey).toBe('string');
-        expect(config.plugins.updater.pubkey.length).toBeGreaterThan(50);
-
-        // Check for base64 encoded minisign public key format
-        expect(config.plugins.updater.pubkey).toMatch(/^[A-Za-z0-9+/=]+$/);
-      });
-
-      it('should not expose private keys or secrets', () => {
-        expect(config.plugins.updater.pubkey).not.toContain('private');
-        expect(config.plugins.updater.pubkey).not.toContain('secret');
+      it('should not expose updater signing material', () => {
+        expect(config.plugins.updater.pubkey).toBe('');
       });
     });
   });
@@ -279,7 +259,7 @@ describe('Tauri Configuration Tests', () => {
     it('should have bundle configuration enabled', () => {
       expect(config.bundle.active).toBe(true);
       expect(config.bundle.targets).toBe('all');
-      expect(config.bundle.createUpdaterArtifacts).toBe(true);
+      expect(config.bundle.createUpdaterArtifacts).toBe(false);
     });
 
     it('should have valid icon file paths', () => {
@@ -424,7 +404,7 @@ describe('Tauri Configuration Tests', () => {
 
   describe('Security and Privacy Validation', () => {
     it('should use HTTPS for all external endpoints', () => {
-      config.plugins.updater.endpoints.forEach((endpoint: string) => {
+      (config.plugins.updater.endpoints ?? []).forEach((endpoint: string) => {
         expect(endpoint).toMatch(/^https:\/\//);
         expect(endpoint).not.toMatch(/^http:\/\//);
       });
@@ -452,14 +432,8 @@ describe('Tauri Configuration Tests', () => {
       });
     });
 
-    it('should have updater public key but no private information', () => {
-      expect(config.plugins.updater.pubkey).toBeDefined();
-      expect(typeof config.plugins.updater.pubkey).toBe('string');
-      expect(config.plugins.updater.pubkey.length).toBeGreaterThan(0);
-      // Public key can be base64 encoded, so just check it's not exposing private info
-      const lowerKey = config.plugins.updater.pubkey.toLowerCase();
-      expect(lowerKey).not.toContain('private');
-      expect(lowerKey).not.toContain('secret');
+    it('should not configure updater signing material for source-only builds', () => {
+      expect(config.plugins.updater.pubkey).toBe('');
     });
   });
 });

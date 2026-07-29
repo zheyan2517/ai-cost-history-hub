@@ -103,11 +103,9 @@ fn resolve_agent_dir() -> Result<PathBuf, String> {
         }
     }
 
-    Err(
-        "Could not locate cost_dashboard.py. \
+    Err("Could not locate cost_dashboard.py. \
          Set AGENT_COST_DASHBOARD_DIR or keep agent/ beside claude/."
-            .to_string(),
-    )
+        .to_string())
 }
 
 fn canonicalize_soft(path: &Path) -> PathBuf {
@@ -156,9 +154,7 @@ fn http_ready(port: u16) -> bool {
     };
     let _ = stream.set_read_timeout(Some(Duration::from_millis(500)));
     let _ = stream.set_write_timeout(Some(Duration::from_millis(500)));
-    let req = format!(
-        "GET / HTTP/1.1\r\nHost: {DEFAULT_HOST}:{port}\r\nConnection: close\r\n\r\n"
-    );
+    let req = format!("GET / HTTP/1.1\r\nHost: {DEFAULT_HOST}:{port}\r\nConnection: close\r\n\r\n");
     if stream.write_all(req.as_bytes()).is_err() {
         return false;
     }
@@ -281,10 +277,7 @@ pub async fn open_cost_dashboard(
             .map_err(|_| "Cost dashboard state lock poisoned".to_string())?;
         take_dead_child(&mut guard);
         let port = guard.port;
-        let alive = guard
-            .child
-            .as_mut()
-            .is_some_and(child_still_running);
+        let alive = guard.child.as_mut().is_some_and(child_still_running);
         if let Some(port) = port {
             if alive && http_ready(port) {
                 let url = url_for(port);
@@ -350,9 +343,7 @@ pub async fn open_cost_dashboard(
 
 /// Stop the managed cost service process if it is running.
 #[tauri::command]
-pub async fn stop_cost_dashboard(
-    state: State<'_, CostDashboardState>,
-) -> Result<bool, String> {
+pub async fn stop_cost_dashboard(state: State<'_, CostDashboardState>) -> Result<bool, String> {
     let mut guard = state
         .inner
         .lock()

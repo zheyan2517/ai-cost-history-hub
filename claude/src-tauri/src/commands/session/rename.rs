@@ -301,7 +301,7 @@ fn configured_claude_dirs() -> Vec<String> {
 
 /// Expand a leading `~` to the home directory, mirroring `detect_claude_config_dir`.
 fn expand_home_prefix(raw: &str) -> String {
-    let Some(home) = dirs::home_dir() else {
+    let Some(home) = crate::utils::home_dir() else {
         return raw.to_string();
     };
     if raw == "~" {
@@ -323,7 +323,7 @@ fn expand_home_prefix(raw: &str) -> String {
 fn resolve_claude_roots(configured: &[String]) -> Vec<PathBuf> {
     let mut roots = Vec::new();
 
-    if let Some(home) = dirs::home_dir() {
+    if let Some(home) = crate::utils::home_dir() {
         push_root(&mut roots, home.join(".claude"));
     }
 
@@ -1430,10 +1430,7 @@ mod tests {
 
     #[test]
     fn test_strip_title_prefix_unicode() {
-        assert_eq!(
-            strip_title_prefix("[タイトル] メッセージ"),
-            "メッセージ"
-        );
+        assert_eq!(strip_title_prefix("[タイトル] メッセージ"), "メッセージ");
     }
 
     #[test]
@@ -1589,7 +1586,7 @@ mod tests {
     #[test]
     fn test_validate_claude_path_valid_path() {
         // This test requires a real .jsonl file in ~/.claude to exist
-        if let Some(home) = dirs::home_dir() {
+        if let Some(home) = crate::utils::home_dir() {
             let claude_projects = home.join(".claude/projects");
             if claude_projects.exists() {
                 // Try to find any .jsonl file in projects subdirectories
@@ -1687,6 +1684,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(windows, ignore = "requires Windows symlink privilege")]
     fn resolve_claude_roots_skips_symlinked_custom_directory() {
         let temp = tempfile::TempDir::new().unwrap();
         let real_base = real_temp_root(&temp).join("real-claude");
@@ -1709,7 +1707,7 @@ mod tests {
     #[test]
     fn resolve_claude_roots_always_includes_default_claude_dir() {
         let roots = resolve_claude_roots(&[]);
-        if let Some(home) = dirs::home_dir() {
+        if let Some(home) = crate::utils::home_dir() {
             let default_root = home.join(".claude");
             // Roots are stored as-is (not canonicalized), unless ~/.claude is a
             // symlink (then push_root drops it).
@@ -1726,6 +1724,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(windows, ignore = "requires Windows symlink privilege")]
     fn push_root_rejects_symlinked_root() {
         let temp = tempfile::TempDir::new().unwrap();
         let real = real_temp_root(&temp).join("real-root");
@@ -1771,6 +1770,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(windows, ignore = "requires Windows symlink privilege")]
     fn validate_claude_path_accepts_symlinked_project_directory() {
         // Mirrors the shared-sessions layout: a project directory under
         // <root>/projects is a symlink into a real directory elsewhere (e.g.
@@ -1801,6 +1801,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(windows, ignore = "requires Windows symlink privilege")]
     fn validate_claude_path_rejects_symlink_below_project_directory() {
         // A symlink deeper than the project directory is not allowed.
         let temp = tempfile::TempDir::new().unwrap();
@@ -1828,6 +1829,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(windows, ignore = "requires Windows symlink privilege")]
     fn validate_claude_path_rejects_symlinked_session_file() {
         // The session file itself must be a real file, not a symlink.
         let temp = tempfile::TempDir::new().unwrap();
@@ -1873,7 +1875,7 @@ mod tests {
     #[test]
     fn test_validate_claude_path_filename_with_special_chars() {
         // Test filename validation with various invalid characters
-        if let Some(home) = dirs::home_dir() {
+        if let Some(home) = crate::utils::home_dir() {
             let claude_dir = home.join(".claude/projects");
             // Filename with dot (besides extension) should fail
             let path_with_dot = claude_dir

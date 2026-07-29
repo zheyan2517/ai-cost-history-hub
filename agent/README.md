@@ -1,121 +1,56 @@
-# Cost Dashboard
+# Python Cost Dashboard
 
-Web dashboard to monitor local API costs for common coding agents (Pi, Oh My Pi, Claude Code, Codex CLI, Gemini CLI, and related tools).
+This directory contains the dependency-free Python dashboard used by
+AI Cost History Hub. It reads local coding-agent session files and presents
+token, model, tool, project, session, and estimated-cost summaries.
 
-No external dependencies — pure Python stdlib.
+The root [README](../README.md) is the canonical installation guide.
 
-![Main dashboard showing global stats, and daily spending](screenshots/dashboard-overview.png)
+## Supported sources
 
-## Features
+- Claude Code JSONL sessions
+- Codex CLI JSONL rollouts
+- Gemini CLI JSONL sessions
+- Pi and Oh My Pi JSONL sessions
 
-### Global Statistics
-Track total spending across all projects and sessions:
-- Total tokens broken down by input, output, cache-read, cache-write, and reasoning counts when exposed
-- Detailed token usage across all models where source data exposes it
-- Session count and project count
-- LLM time vs tool execution time
-- Average tokens per second across all API calls
+Session paths are read-only. The dashboard accepts multiple roots for each
+source and can load them from `config.json` or repeated CLI options.
 
-### Daily Spending Chart
-Timeline of API costs over time.
+## Run locally
 
-### Model Breakdown
-Costs broken down by AI model (Claude, Gemini, GPT-5, O3, O4, GLM, etc.):
-- Messages, input/output/cache-read/cache-write/reasoning token usage, and cost per model
-- Average tokens per second
-
-![Model Stats](screenshots/model-stats.png)
-
-### Tool Usage
-Track which tools your agent uses most:
-- Call counts and execution time per tool
-- Error rates
-
-![Tool Stats](screenshots/tool-stats.png)
-
-### Project View
-All projects with expandable details:
-- Per-project cost, model usage, tool usage, and session history
-- Sortable by cost, tokens, LLM time, or date
-
-![Projects](screenshots/projects.png)
-
-### Session Browser
-Browse every session with full details:
-- Copy command to resume session to the clipboard
-- Full transcript export (Pi via `pi --export`, Claude and Codex via built-in exporters)
-- Session duration, LLM time, and tool time
-- Subagent session support with expandable grouping
-- Sortable by date, duration, cost, tokens, and more
-
-![Sessions](screenshots/sessions.png)
-
-## Installation
-
-Requires **Python 3.12+**.
+From the repository root:
 
 ```bash
-git clone https://github.com/user/ai-cost-history-hub
-cd ai-cost-history-hub
+python agent/cost_dashboard.py
 ```
 
-## Usage
+Use a specific port or source directory:
 
 ```bash
-# Start the dashboard (defaults to localhost:8753)
-./cost_dashboard.py
-
-# Use a custom port
-./cost_dashboard.py --port 3000
+python agent/cost_dashboard.py --port 3000 --pi-dir /path/to/pi/sessions
 ```
 
-The dashboard binds to loopback (`127.0.0.1`) **only**. It serves local agent
-session data (project names, prompts, file paths, tool calls) without
-authentication, so `--host` rejects non-loopback values such as `0.0.0.0` or
-LAN addresses:
+The server binds to `127.0.0.1` only. Non-loopback hosts are rejected because
+session records can contain prompts, file paths, and tool input.
+
+## Export monthly usage
 
 ```bash
-# Rejected — would expose session data to the network without authentication
-./cost_dashboard.py --host 0.0.0.0
+python agent/cost_dashboard.py --export-monthly 2026-07 --format csv
+python agent/cost_dashboard.py --export-monthly 2026-07 --format json
 ```
 
-On Windows, you can also double-click `start.bat`.
+The export includes one row per parsed LLM usage event. Costs reported by a
+source are labeled `reported`; fallback table values are labeled `estimated`;
+models without a known price are labeled `unknown` and do not receive a fake
+zero-dollar estimate.
 
-Then open http://localhost:8753 in your browser.
+## Tests
 
-## Session Directories
-
-The dashboard automatically reads session data from:
-
-| Agent | Directory |
-|---|---|
-| Pi | `~/.pi/agent/sessions` |
-| Oh My Pi | `~/.omp/agent/sessions` |
-| Claude Code | `~/.claude/projects` |
-| Codex CLI | `~/.codex/sessions` |
-| Gemini CLI | `~/.gemini/tmp` |
-
-## CLI Utilities
-
-### claude_cost.py / gemini_cost.py
-
-Calculate API costs for agent sessions:
+The synthetic fixtures under `../tests/fixtures` contain no real transcripts.
+Run the parser and pricing tests from the repository root:
 
 ```bash
-python claude_cost.py /path/to/sessions
-python gemini_cost.py ~/.gemini/tmp/project/chats
+python -m unittest discover -s tests -v
+python scripts/clean_install_test.py
 ```
-
-### claude_export.py / codex_export.py / gemini_export.py
-
-Export a session JSONL file to a styled HTML transcript:
-
-```bash
-python claude_export.py input.jsonl output.html
-python codex_export.py input.jsonl output.html
-python gemini_export.py input.jsonl output.html
-```
-
-## Pricing
-
-Costs are calculated using pricing reported by the agent. For models that don't report costs (e.g., Gemini via Google Cloud), estimated pricing is applied based on public API rates. Supported model families: Claude, Gemini, GPT-5, O3/O4, GLM.

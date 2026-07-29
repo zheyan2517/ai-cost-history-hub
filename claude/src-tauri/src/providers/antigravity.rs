@@ -775,16 +775,16 @@ mod tests {
     }
     impl HomeGuard {
         fn set(path: &std::path::Path) -> Self {
-            let original = std::env::var("HOME").ok();
-            std::env::set_var("HOME", path);
+            let original = std::env::var("CCHV_TEST_HOME").ok();
+            std::env::set_var("CCHV_TEST_HOME", path);
             Self { original }
         }
     }
     impl Drop for HomeGuard {
         fn drop(&mut self) {
             match self.original.as_ref() {
-                Some(v) => std::env::set_var("HOME", v),
-                None => std::env::remove_var("HOME"),
+                Some(v) => std::env::set_var("CCHV_TEST_HOME", v),
+                None => std::env::remove_var("CCHV_TEST_HOME"),
             }
         }
     }

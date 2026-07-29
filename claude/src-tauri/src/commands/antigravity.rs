@@ -35,7 +35,7 @@ static MODEL_ALIAS_MAP: Lazy<HashMap<&'static str, &'static str>> = Lazy::new(||
 
 /// Locate antigravity root directory：`~/.gemini/antigravity`
 pub fn get_antigravity_root() -> Option<PathBuf> {
-    dirs::home_dir().map(|h| h.join(".gemini").join("antigravity"))
+    crate::utils::home_dir().map(|h| h.join(".gemini").join("antigravity"))
 }
 
 /// Resolves the antigravity root directory, with fallback discovery logic.
@@ -110,7 +110,7 @@ pub fn get_antigravity_rpc_cache_root(root: &Path) -> PathBuf {
 fn discover_external_state_dirs() -> Vec<PathBuf> {
     let mut dirs = Vec::new();
     let bases = if cfg!(target_os = "macos") {
-        dirs::home_dir()
+        crate::utils::home_dir()
             .map(|home| vec![home.join("Library").join("Application Support")])
             .unwrap_or_default()
     } else if cfg!(target_os = "windows") {
@@ -120,7 +120,7 @@ fn discover_external_state_dirs() -> Vec<PathBuf> {
         if let Some(config_dir) = dirs::config_dir() {
             candidates.push(config_dir);
         }
-        if let Some(home) = dirs::home_dir() {
+        if let Some(home) = crate::utils::home_dir() {
             let fallback = home.join(".config");
             if !candidates.iter().any(|candidate| candidate == &fallback) {
                 candidates.push(fallback);
@@ -818,7 +818,7 @@ pub fn load_archive_states(root: &Path) -> Vec<AntigravityState> {
 
 /// Merge states: later (active) overrides earlier (archive) for the same `session_id`
 ///
-/// Matches antigravity-token-monitor  `mergeSessionMaps` 
+/// Matches antigravity-token-monitor  `mergeSessionMaps`
 pub fn merge_states(
     archive_states: Vec<AntigravityState>,
     active: Option<AntigravityState>,

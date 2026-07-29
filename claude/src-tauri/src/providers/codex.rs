@@ -45,7 +45,7 @@ pub fn get_base_path() -> Option<String> {
     }
 
     // Default: ~/.codex
-    let home = dirs::home_dir()?;
+    let home = crate::utils::home_dir()?;
     let codex_path = home.join(".codex");
     if codex_path.exists() {
         Some(codex_path.to_string_lossy().to_string())
@@ -2852,10 +2852,16 @@ mod tests {
             .expect("sessions should be loaded");
 
         assert_eq!(sessions.len(), 2);
-        assert!(sessions.iter().any(|s| s.file_path.contains("/sessions/")));
-        assert!(sessions
-            .iter()
-            .any(|s| s.file_path.contains("/archived_sessions/")));
+        assert!(sessions.iter().any(|s| {
+            std::path::Path::new(&s.file_path)
+                .components()
+                .any(|component| component.as_os_str() == "sessions")
+        }));
+        assert!(sessions.iter().any(|s| {
+            std::path::Path::new(&s.file_path)
+                .components()
+                .any(|component| component.as_os_str() == "archived_sessions")
+        }));
     }
 
     #[test]

@@ -64,8 +64,8 @@ pub async fn get_git_log(actual_path: String, limit: usize) -> Result<Vec<GitCom
 
 #[tauri::command]
 pub async fn get_claude_folder_path() -> Result<String, String> {
-    let home_dir =
-        dirs::home_dir().ok_or("HOME_DIRECTORY_NOT_FOUND:Could not determine home directory")?;
+    let home_dir = crate::utils::home_dir()
+        .ok_or("HOME_DIRECTORY_NOT_FOUND:Could not determine home directory")?;
     let claude_path = home_dir.join(".claude");
 
     if !claude_path.exists() {
@@ -133,12 +133,12 @@ pub async fn detect_claude_config_dir() -> Result<Option<String>, String> {
 
     // Expand ~ to home directory (only exact "~" or "~/..." patterns)
     let expanded = if raw == "~" {
-        match dirs::home_dir() {
+        match crate::utils::home_dir() {
             Some(home) => home.to_string_lossy().to_string(),
             None => raw,
         }
     } else if let Some(rest) = raw.strip_prefix("~/") {
-        match dirs::home_dir() {
+        match crate::utils::home_dir() {
             Some(home) => home.join(rest).to_string_lossy().to_string(),
             None => raw,
         }
@@ -602,8 +602,19 @@ mod tests {
         let temp_dir = TempDir::new().unwrap();
         let claude_dir = temp_dir.path().join(".claude");
         let projects_dir = claude_dir.join("projects");
-        // Folder name decodes to an existing directory (/usr/lib).
-        let project_dir = projects_dir.join("-usr-lib");
+        let verified_path = temp_dir.path().join("verified").join("lib");
+        fs::create_dir_all(&verified_path).unwrap();
+        let verified_path = verified_path.canonicalize().unwrap();
+        let expected_verified_path = verified_path.to_string_lossy().replace("\\\\?\\", "");
+        let mut raw = verified_path.to_string_lossy().into_owned();
+        if let Some(stripped) = raw.strip_prefix("\\\\?\\") {
+            raw = stripped.to_string();
+        }
+        let mut encoded = raw.replace(['/', '\\', ':'], "-");
+        if !encoded.starts_with('-') {
+            encoded.insert(0, '-');
+        }
+        let project_dir = projects_dir.join(encoded);
         fs::create_dir_all(&project_dir).unwrap();
 
         // The session's embedded cwd is stale (points elsewhere), simulating a
@@ -627,7 +638,7 @@ mod tests {
 
         assert_eq!(projects.len(), 1);
         // Verified folder name wins over the stale cwd.
-        assert_eq!(projects[0].actual_path, "/usr/lib");
+        assert_eq!(projects[0].actual_path, expected_verified_path);
         assert_eq!(projects[0].name, "lib");
     }
 
@@ -899,7 +910,9 @@ mod tests {
 
     #[tokio::test]
     async fn test_get_git_log_invalid_path() {
-        let result = get_git_log("/nonexistent/path".to_string(), 10).await;
+        let temp = TempDir::new().unwrap();
+        let missing = temp.path().join("missing-git-directory");
+        let result = get_git_log(missing.to_string_lossy().into_owned(), 10).await;
         // Should fail because path doesn't exist
         assert!(result.is_err());
         assert_eq!(

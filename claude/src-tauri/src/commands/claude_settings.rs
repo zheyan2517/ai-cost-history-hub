@@ -41,19 +41,19 @@ pub struct AllMCPServers {
 
 /// Get the user settings path (~/.claude/settings.json)
 fn get_user_settings_path() -> Result<PathBuf, String> {
-    let home = dirs::home_dir().ok_or("Could not find home directory")?;
+    let home = crate::utils::home_dir().ok_or("Could not find home directory")?;
     Ok(home.join(".claude").join("settings.json"))
 }
 
 /// Get the user MCP settings path (~/.claude/.mcp.json)
 fn get_user_mcp_path() -> Result<PathBuf, String> {
-    let home = dirs::home_dir().ok_or("Could not find home directory")?;
+    let home = crate::utils::home_dir().ok_or("Could not find home directory")?;
     Ok(home.join(".claude").join(".mcp.json"))
 }
 
 /// Get the main Claude config path (~/.claude.json) - the official config file
 fn get_claude_json_path() -> Result<PathBuf, String> {
-    let home = dirs::home_dir().ok_or("Could not find home directory")?;
+    let home = crate::utils::home_dir().ok_or("Could not find home directory")?;
     Ok(home.join(".claude.json"))
 }
 
@@ -605,7 +605,7 @@ pub(crate) fn validate_dialog_path(path: &Path) -> Result<(), String> {
 /// `Ok(())` if path is safe, error message if not
 #[cfg(feature = "webui-server")]
 pub(crate) fn is_safe_path(path: &Path) -> Result<(), String> {
-    let home_raw = dirs::home_dir().ok_or("Could not find home directory")?;
+    let home_raw = crate::utils::home_dir().ok_or("Could not find home directory")?;
     // Canonicalize home to resolve symlinks (e.g. macOS /var → /private/var)
     let home = home_raw.canonicalize().unwrap_or_else(|_| home_raw.clone());
     let home = strip_windows_prefix(&home);
@@ -617,7 +617,14 @@ pub(crate) fn is_safe_path(path: &Path) -> Result<(), String> {
         (dirs::document_dir(), "Documents"),
         (dirs::desktop_dir(), "Desktop"),
     ] {
-        let resolved = api_dir.unwrap_or_else(|| home.join(fallback_name));
+        // The test-only home override intentionally has no corresponding OS
+        // known-folder registration. Use its relative fallback in that case;
+        // production builds continue to honor redirected known folders.
+        let resolved = if cfg!(test) && std::env::var_os("CCHV_TEST_HOME").is_some() {
+            home.join(fallback_name)
+        } else {
+            api_dir.unwrap_or_else(|| home.join(fallback_name))
+        };
         let resolved =
             strip_windows_prefix(&resolved.canonicalize().unwrap_or_else(|_| resolved.clone()));
         allowed_dirs.push(resolved);
@@ -759,7 +766,7 @@ mod tests {
     /// `env::set_var("HOME")` is process-global and not thread-safe.
     fn setup_test_env() -> TempDir {
         let temp_dir = TempDir::new().unwrap();
-        env::set_var("HOME", temp_dir.path());
+        env::set_var("CCHV_TEST_HOME", temp_dir.path());
         temp_dir
     }
 
@@ -990,16 +997,22 @@ mod tests {
 
     #[test]
     fn test_validate_dialog_path_parent_dir_rejected() {
-        let path = Path::new("/some/path/../escape.txt");
-        let result = validate_dialog_path(path);
+        let path = std::env::temp_dir()
+            .join("some")
+            .join("path")
+            .join("..")
+            .join("escape.txt");
+        let result = validate_dialog_path(&path);
         assert!(result.is_err());
         assert!(result.unwrap_err().contains("'..'"));
     }
 
     #[test]
     fn test_validate_dialog_path_nonexistent_parent_rejected() {
-        let path = Path::new("/nonexistent_dir_abc123/file.txt");
-        let result = validate_dialog_path(path);
+        let path = std::env::temp_dir()
+            .join("nonexistent_dir_abc123")
+            .join("file.txt");
+        let result = validate_dialog_path(&path);
         assert!(result.is_err());
         assert!(result.unwrap_err().contains("does not exist"));
     }

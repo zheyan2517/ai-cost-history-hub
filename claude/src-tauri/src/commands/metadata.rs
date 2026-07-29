@@ -57,7 +57,7 @@ impl Default for MetadataState {
 
 /// Get the metadata folder path (~/.claude-history-viewer)
 fn get_metadata_folder() -> Result<PathBuf, String> {
-    let home = dirs::home_dir().ok_or("Could not find home directory")?;
+    let home = crate::utils::home_dir().ok_or("Could not find home directory")?;
     Ok(home.join(".claude-history-viewer"))
 }
 
@@ -323,7 +323,7 @@ mod tests {
     fn setup_test_env() -> (MutexGuard<'static, ()>, TempDir) {
         let guard = TEST_ENV_MUTEX.lock().unwrap();
         let temp_dir = TempDir::new().unwrap();
-        env::set_var("HOME", temp_dir.path());
+        env::set_var("CCHV_TEST_HOME", temp_dir.path());
         (guard, temp_dir)
     }
 
@@ -374,7 +374,9 @@ mod tests {
 
     #[test]
     fn test_validate_project_metadata_key_absolute_path() {
-        assert!(validate_project_metadata_key("/tmp/project").is_ok());
+        let temp = tempfile::tempdir().unwrap();
+        let project = temp.path().join("project");
+        assert!(validate_project_metadata_key(&project.to_string_lossy()).is_ok());
     }
 
     #[test]

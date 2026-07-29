@@ -56,7 +56,7 @@ const SUMMARY_MAX_CHARS: usize = 200;
 /// Default CLI store root. The existing antigravity provider has no env
 /// override pattern, so none is honored here either.
 pub(crate) fn default_root() -> Option<PathBuf> {
-    dirs::home_dir().map(|h| h.join(".gemini").join("antigravity-cli"))
+    crate::utils::home_dir().map(|h| h.join(".gemini").join("antigravity-cli"))
 }
 
 /// True when the default CLI root looks like an antigravity-cli store.

@@ -8,6 +8,8 @@ Plans for AI Cost History Hub. Items may move based on feedback.
 - [x] English-only docs and UI language pin
 - [x] Loopback-only defaults and security notes
 - [x] One-command health check (`coordinator.py smoke`)
+- [x] Clean-install verification in CI
+- [x] Regression fixtures for all supported providers
 - [x] Better first-run errors when Python / ports are missing
 - [x] macOS / Linux start scripts
 
@@ -19,7 +21,7 @@ Plans for AI Cost History Hub. Items may move based on feedback.
 ## Later
 
 - [ ] Optional auth if remote access is ever required (off by default)
-- [ ] Export helpers for monthly cost summaries
+- [x] Export helpers for monthly cost summaries
 - [ ] Contributor onboarding based on real issues
 
 ## Feedback

@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-/// Matches antigravity-token-monitor  `PersistedSessionState` 
+/// Matches antigravity-token-monitor  `PersistedSessionState`
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct PersistedSessionState {
     pub signature: String,
@@ -30,7 +30,7 @@ pub struct SessionSnapshot {
     pub mode: String, // "reported" | "estimated"
 }
 
-/// Session 
+/// Session
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 #[serde(rename_all = "lowercase")]
 pub enum SessionLifecycleStatus {
@@ -88,7 +88,7 @@ pub struct AntigravityState {
     pub sessions: HashMap<String, PersistedSessionState>,
 }
 
-/// Antigravity  — 
+/// Antigravity  —
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AntigravityProjectSummary {
     #[serde(rename = "sessionCount")]
@@ -114,7 +114,7 @@ pub struct AntigravityProjectSummary {
     pub sessions: Vec<AntigravitySessionInfo>,
 }
 
-///  session 
+///  session
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AntigravitySessionInfo {
     #[serde(rename = "sessionId")]

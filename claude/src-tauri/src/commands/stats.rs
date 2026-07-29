@@ -374,7 +374,7 @@ fn is_antigravity_path(path: &str) -> bool {
 /// Whether `path` lies under `~/.codebuddy/projects/`. Anchored detection avoids
 /// false positives from arbitrary substrings (e.g. `/work/foo.codebuddy-test`).
 fn is_codebuddy_path(path: &str) -> bool {
-    let Some(home) = dirs::home_dir() else {
+    let Some(home) = crate::utils::home_dir() else {
         return false;
     };
     is_codebuddy_path_under(path, &home)
@@ -5760,8 +5760,8 @@ mod tests {
         // Override HOME so resolve_antigravity_root() points at our fixture.
         // env::set_var is process-global → this test must be `#[serial]` so
         // it cannot race with other HOME-touching tests.
-        let original_home = std::env::var("HOME").ok();
-        std::env::set_var("HOME", home);
+        let original_test_home = std::env::var("CCHV_TEST_HOME").ok();
+        std::env::set_var("CCHV_TEST_HOME", home);
 
         let antigravity_root = home.join(".gemini").join("antigravity");
         let rpc_session = antigravity_root
@@ -5812,10 +5812,10 @@ mod tests {
         assert_eq!(summary.token_distribution.input, 100);
         assert_eq!(summary.token_distribution.output, 50);
 
-        if let Some(value) = original_home {
-            std::env::set_var("HOME", value);
+        if let Some(value) = original_test_home {
+            std::env::set_var("CCHV_TEST_HOME", value);
         } else {
-            std::env::remove_var("HOME");
+            std::env::remove_var("CCHV_TEST_HOME");
         }
     }
 
