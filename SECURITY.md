@@ -7,7 +7,7 @@ Security fixes are applied on the latest `main` branch and tagged releases when 
 | Version | Supported |
 |---------|-----------|
 | `main`  | Yes |
-| Latest tagged release (e.g. `v0.x`) | Yes |
+| Latest tagged release (`v0.2.1`) | Yes |
 | Older tags | Best effort |
 
 ## Product security defaults
