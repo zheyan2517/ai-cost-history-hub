@@ -9,6 +9,7 @@ and reports desktop-app readiness. Pure Python stdlib (3.12+).
 from __future__ import annotations
 
 import argparse
+import ipaddress
 import json
 import os
 import shutil
@@ -29,6 +30,30 @@ CONFIG_PATH = ROOT / "config.json"
 PID_FILE = ROOT / ".runtime" / "cost-dashboard.pid"
 LOG_FILE = ROOT / ".runtime" / "cost-dashboard.log"
 STATE_FILE = ROOT / ".runtime" / "state.json"
+
+LOOPBACK_HOSTNAMES = {"localhost"}
+
+
+def is_loopback_host(host: str) -> bool:
+    """Return True when *host* can only be reached from this machine."""
+    normalized = host.strip().lower().rstrip(".")
+    if normalized in LOOPBACK_HOSTNAMES:
+        return True
+    try:
+        return ipaddress.ip_address(normalized).is_loopback
+    except ValueError:
+        return False
+
+
+def require_loopback_host(host: str, *, label: str) -> str:
+    """Reject non-loopback hosts so session data cannot be exposed on a LAN."""
+    if not is_loopback_host(host):
+        raise RuntimeError(
+            f"Refusing to start {label} on non-loopback host '{host}'. "
+            "Services expose local agent session data without authentication; "
+            "use 127.0.0.1, ::1, or localhost."
+        )
+    return host
 
 
 def load_config() -> dict:
@@ -261,7 +286,7 @@ def stop_cost_dashboard() -> bool:
 
 
 def ensure_cost_dashboard(cfg: dict, open_browser: bool = False) -> dict:
-    host = cfg["costDashboard"]["host"]
+    host = require_loopback_host(cfg["costDashboard"]["host"], label="cost dashboard")
     preferred = int(cfg["costDashboard"]["port"])
     span = int(cfg["costDashboard"]["portRange"])
     timeout = float(cfg["costDashboard"]["readyTimeoutSec"])
@@ -581,7 +606,7 @@ class PortalHandler(BaseHTTPRequestHandler):
 
 
 def serve_portal(cfg: dict, cost_info: dict, open_browser: bool = True) -> None:
-    host = cfg["portal"]["host"]
+    host = require_loopback_host(cfg["portal"]["host"], label="portal")
     preferred = int(cfg["portal"]["port"])
     span = int(cfg.get("portal", {}).get("portRange", 20))
     port = pick_port(host, preferred, span, label="portal")
