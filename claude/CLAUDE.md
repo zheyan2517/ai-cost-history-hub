@@ -5,7 +5,7 @@ contains only development conventions for the optional Tauri application.
 
 ## Scope
 
-The desktop viewer is source-only in `v0.1.0`. Do not add public installer,
+The desktop viewer is source-only in `v0.2.0`. Do not add public installer,
 Homebrew, server-binary, website, or auto-download instructions until the
 corresponding artifacts and release checks exist.
 

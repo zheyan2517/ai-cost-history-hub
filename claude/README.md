@@ -4,7 +4,7 @@ The `claude/` directory contains the optional Tauri desktop viewer for
 AI Cost History Hub. The repository root [README](../README.md) is the only
 user-facing installation guide.
 
-This `v0.1.0` release is source-only. No desktop installer, Homebrew package,
+This `v0.2.0` release is source-only. No desktop installer, Homebrew package,
 server binary, website, or automatic-download release metadata is published.
 
 ## Requirements
@@ -50,7 +50,7 @@ after changing it:
 node scripts/sync-version.cjs
 ```
 
-The current source version is `0.1.0`.
+The current source version is `0.2.0`.
 
 ## Scope
 

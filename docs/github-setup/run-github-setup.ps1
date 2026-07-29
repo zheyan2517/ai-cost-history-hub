@@ -12,7 +12,7 @@ $ErrorActionPreference = "Stop"
 $Repo = "zheyan2517/ai-cost-history-hub"
 $Root = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent
 if (-not (Test-Path (Join-Path $Root ".git"))) {
-  $Root = "E:\xiangmu\wangquanti"
+  throw "Run this script from a Git checkout of ai-cost-history-hub."
 }
 Set-Location $Root
 
@@ -48,15 +48,15 @@ gh repo edit $Repo --add-topic openai
 gh repo edit $Repo --add-topic open-source
 gh repo edit $Repo --add-topic local-first
 
-Write-Host "==> Release v0.1.0"
-$notes = Join-Path $PSScriptRoot "RELEASE_v0.1.0.md"
-$existing = gh release view v0.1.0 --repo $Repo 2>$null
+Write-Host "==> Release v0.2.0"
+$notes = Join-Path $PSScriptRoot "RELEASE_v0.2.0.md"
+$existing = gh release view v0.2.0 --repo $Repo 2>$null
 if ($LASTEXITCODE -eq 0) {
-  Write-Host "Release v0.1.0 already exists — skipping create"
+  Write-Host "Release v0.2.0 already exists — skipping create"
 } else {
-  gh release create v0.1.0 `
+  gh release create v0.2.0 `
     --repo $Repo `
-    --title "v0.1.0" `
+    --title "v0.2.0" `
     --notes-file $notes
 }
 

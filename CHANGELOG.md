@@ -5,6 +5,33 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+## [0.2.0] - 2026-07-29
+
+### Added
+
+- Cross-platform clean-install verification and stable synthetic fixtures for
+  supported providers
+- Smoke-test workflow for the local coordinator and cost dashboard
+- Windows path handling and isolated test-home support for Rust tests
+
+### Changed
+
+- Unified the repository and desktop viewer on source-only version `0.2.0`
+- Consolidated the public release documentation around the source distribution
+- Disabled updater metadata and artifact generation until signed release
+  assets are published
+
+### Fixed
+
+- Corrected Windows path parsing for Claude project history
+- Removed Unix-only assumptions from cross-platform tests
+
+### Security
+
+- Kept dashboard and portal services loopback-only by default
+
 ## [0.1.0] - 2026-07-25
 
 ### Added
@@ -26,24 +53,3 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Default host for the cost service forced to loopback
 - Security policy published in `SECURITY.md`
-
-## [Unreleased]
-
-### Added
-
-- Clear first-run errors when Python is missing or ports are exhausted
-- `start.sh`, `start-cost-dashboard.sh`, `start-all.sh` for macOS / Linux
-- `python scripts/coordinator.py smoke` and `scripts/smoke_test.py`
-- Isolated clean-install verification and stable synthetic fixtures for all
-  supported providers
-- GitHub Actions workflow `.github/workflows/smoke.yml`
-
-### Changed
-
-- Unified the repository and desktop viewer on source-only version `0.1.0`
-- Disabled updater metadata and artifact generation until signed release
-  assets are published
-
-### Planned
-
-- Packaging notes for desktop builds

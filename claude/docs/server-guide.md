@@ -1,6 +1,6 @@
 # Server packaging status
 
-The current `v0.1.0` release does not publish a server binary, Docker image,
+The current `v0.2.0` release does not publish a server binary, Docker image,
 installer, or remote deployment recipe. The supported workflow is the local
 desktop viewer and the Python dashboard described in the repository root
 [README](../../README.md).
