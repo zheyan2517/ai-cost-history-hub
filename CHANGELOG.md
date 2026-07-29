@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-07-29
+
+### Fixed
+
+- Fixed Windows launchers failing on valid Python installations because of
+  stale batch error-level expansion
+- Fixed Unix launchers reporting the inverted exit status after a failed
+  coordinator start
+- Made launcher failures return directly instead of waiting for interactive
+  input
+
 ## [0.2.0] - 2026-07-29
 
 ### Added

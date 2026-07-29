@@ -14,39 +14,35 @@ echo  ============================================
 echo.
 
 where py >nul 2>nul
-if %ERRORLEVEL%==0 (
-  py -3 "%~dp0scripts\coordinator.py" start --portal
-  set "ERR=%ERRORLEVEL%"
-  if not "%ERR%"=="0" (
-    echo.
-    echo [ERROR] Launcher failed with exit code %ERR%.
-    echo If Python is missing, install 3.12+ from https://www.python.org/downloads/
-    echo and enable "Add python.exe to PATH", then open a NEW terminal.
-    echo If ports are busy:  python scripts\coordinator.py stop
-    echo Or check:  netstat -ano ^| findstr ":8753 :8740"
-    echo See README Troubleshooting for more.
-    pause
-  )
-  exit /b %ERR%
-)
+if not errorlevel 1 goto use_py
 
 where python >nul 2>nul
-if %ERRORLEVEL%==0 (
-  python "%~dp0scripts\coordinator.py" start --portal
-  set "ERR=%ERRORLEVEL%"
-  if not "%ERR%"=="0" (
-    echo.
-    echo [ERROR] Launcher failed with exit code %ERR%.
-    echo If Python is missing, install 3.12+ from https://www.python.org/downloads/
-    echo and enable "Add python.exe to PATH", then open a NEW terminal.
-    echo If ports are busy:  python scripts\coordinator.py stop
-    echo Or check:  netstat -ano ^| findstr ":8753 :8740"
-    echo See README Troubleshooting for more.
-    pause
-  )
-  exit /b %ERR%
-)
+if not errorlevel 1 goto use_python
 
+goto python_missing
+
+:use_py
+py -3 "%~dp0scripts\coordinator.py" start --portal
+set "ERR=%ERRORLEVEL%"
+goto report_result
+
+:use_python
+python "%~dp0scripts\coordinator.py" start --portal
+set "ERR=%ERRORLEVEL%"
+goto report_result
+
+:report_result
+if "%ERR%"=="0" exit /b 0
+echo.
+echo [ERROR] Launcher failed with exit code %ERR%.
+echo If Python is missing, install 3.12+ from https://www.python.org/downloads/
+echo and enable "Add python.exe to PATH", then open a NEW terminal.
+echo If ports are busy:  python scripts\coordinator.py stop
+echo Or check:  netstat -ano ^| findstr ":8753 :8740"
+echo See README Troubleshooting for more.
+exit /b %ERR%
+
+:python_missing
 echo.
 echo [ERROR] Python 3.12+ was not found on PATH.
 echo.
@@ -57,5 +53,4 @@ echo   3. Open a NEW terminal
 echo   4. Verify:  py -3 --version   or   python --version
 echo   5. Re-run start.bat
 echo.
-pause
 exit /b 1

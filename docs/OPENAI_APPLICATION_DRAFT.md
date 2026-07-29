@@ -11,7 +11,7 @@ Keep claims accurate.
 - **URL:** https://github.com/zheyan2517/ai-cost-history-hub  
 - **Role:** Primary maintainer / repository owner (`@zheyan2517`)  
 - **License:** MIT  
-- **Latest tag:** `v0.2.0`
+- **Latest tag:** `v0.2.1`
 
 ## Short description
 

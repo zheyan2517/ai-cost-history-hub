@@ -3,7 +3,7 @@
 Local-first tools for browsing AI coding-agent history and estimating API
 costs from session files already stored on your machine.
 
-**Status:** source-only release `v0.2.0`
+**Status:** source-only release `v0.2.1`
 **License:** [MIT](LICENSE)
 
 This repository currently publishes source code only. It does not publish a

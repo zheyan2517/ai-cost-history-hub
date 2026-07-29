@@ -1,6 +1,6 @@
 [package]
 name = "claude-code-history-viewer"
-version = "0.2.0"
+version = "0.2.1"
 description = "AI Cost History Hub — local conversation history and cost analytics"
 license = "MIT"
 

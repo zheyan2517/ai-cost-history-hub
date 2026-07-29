@@ -41,7 +41,9 @@ EOF
   exit 1
 fi
 
-if ! "$PY" "$ROOT/scripts/coordinator.py" start --portal; then
+if "$PY" "$ROOT/scripts/coordinator.py" start --portal; then
+  exit 0
+else
   code=$?
   cat <<EOF >&2
 

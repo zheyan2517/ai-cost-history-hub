@@ -32,7 +32,9 @@ EOF
   exit 1
 fi
 
-if ! "$PY" "$ROOT/scripts/coordinator.py" open-cost; then
+if "$PY" "$ROOT/scripts/coordinator.py" open-cost; then
+  exit 0
+else
   code=$?
   cat <<EOF >&2
 
