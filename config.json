@@ -13,6 +13,13 @@
   "paths": {
     "agentDir": "agent",
     "claudeDir": "claude",
-    "dashboardScript": "cost_dashboard.py"
+    "dashboardScript": "cost_dashboard.py",
+    "sessionDirs": {
+      "pi": [],
+      "omp": [],
+      "claude": [],
+      "codex": [],
+      "gemini": []
+    }
   }
 }

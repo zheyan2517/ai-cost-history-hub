@@ -707,12 +707,6 @@ pub async fn start(
             std::process::exit(2);
         });
 
-    if host != "127.0.0.1" {
-        eprintln!(
-            "⚠ Warning: server is exposed to network ({addr}). Use a token to protect API access."
-        );
-    }
-
     eprintln!(
         "🚀 WebUI server running at http://{addr}{}",
         base_href(base_path)

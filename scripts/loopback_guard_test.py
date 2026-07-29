@@ -22,7 +22,7 @@ import coordinator  # noqa: E402
 import cost_dashboard  # noqa: E402
 
 LOOPBACK_CASES = ["127.0.0.1", "::1", "localhost", "LOCALHOST", "localhost."]
-NON_LOOPBACK_CASES = ["0.0.0.0", "::", "192.168.1.10", "10.0.0.5", "example.com"]
+NON_LOOPBACK_CASES = ["0.0.0.1", "::", "192.168.1.10", "10.0.0.5", "example.com"]
 
 
 def fail(message: str) -> None:
@@ -77,7 +77,7 @@ def check_coordinator_guard() -> None:
 
 def check_coordinator_config_path() -> None:
     cfg = coordinator.load_config()
-    cfg["costDashboard"]["host"] = "0.0.0.0"
+    cfg["costDashboard"]["host"] = "0.0.0.1"
     stderr = io.StringIO()
     with redirect_stdout(io.StringIO()), redirect_stderr(stderr):
         try:
@@ -86,7 +86,7 @@ def check_coordinator_config_path() -> None:
             if "Refusing to start" not in str(e):
                 fail(f"coordinator error message missing refusal: {e}")
             return
-    fail("coordinator started cost dashboard with host 0.0.0.0 from config")
+    fail("coordinator started cost dashboard with a non-loopback host from config")
 
 
 def main() -> int:

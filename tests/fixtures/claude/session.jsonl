@@ -1,0 +1,7 @@
+{"type":"user","uuid":"claude-user-1","timestamp":"2026-07-01T10:00:00Z","cwd":"C:\\fixtures\\project","message":{"role":"user","content":"hello"}}
+{"type":"assistant","uuid":"claude-assistant-1","timestamp":"2026-07-01T10:00:05Z","cwd":"C:\\fixtures\\project","message":{"model":"claude-sonnet-4-20250514","usage":{"input_tokens":1000,"output_tokens":200,"cache_read_input_tokens":50,"cache_creation_input_tokens":25},"content":[]}}
+not-json
+{"type":"progress","timestamp":"2026-07-01T10:00:06Z","cwd":"C:\\fixtures\\project","message":{"usage":{"input_tokens":999999}}}
+{"type":"user","uuid":"claude-user-2","timestamp":"2026-07-01T10:01:00Z","cwd":"C:\\fixtures\\project","message":{"role":"user","content":"unknown model next"}}
+{"type":"assistant","uuid":"claude-assistant-2","timestamp":"2026-07-01T10:01:02Z","cwd":"C:\\fixtures\\project","message":{"model":"vendor-model-without-price","usage":{"input_tokens":300,"output_tokens":40},"content":[]}}
+{"type":"file-history-snapshot","timestamp":"2026-07-01T10:01:03Z","snapshot":{}}

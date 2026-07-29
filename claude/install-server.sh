@@ -139,7 +139,7 @@ main() {
     ok "Installed ${BINARY_NAME} ${TAG} to ${INSTALL_DIR}/${BINARY_NAME}"
     printf '\n'
     info "Quick start:"
-    printf '    %s --serve --host 0.0.0.0\n' "$BINARY_NAME"
+    printf '    %s --serve --host 127.0.0.1\n' "$BINARY_NAME"
     printf '\n'
     info "Options:"
     printf '    --port <number>    Server port (default: 3727)\n'

@@ -1,0 +1,5 @@
+{"type":"user","timestamp":"2026-07-03T12:00:00Z","cwd":"/fixtures/gemini-project","content":"hello"}
+{"type":"gemini","timestamp":"2026-07-03T12:00:04Z","cwd":"/fixtures/gemini-project","model":"gemini-2.5-flash","tokens":{"input":1200,"cached":200,"output":100,"cacheWrite":10,"total":1310},"toolCalls":[{"name":"search","timestamp":"2026-07-03T12:00:06Z","status":"ok"}]}
+invalid-json
+{"type":"user","timestamp":"2026-07-03T12:02:00Z","cwd":"/fixtures/gemini-project","content":"unknown"}
+{"type":"gemini","timestamp":"2026-07-03T12:02:03Z","cwd":"/fixtures/gemini-project","model":"gemini-unpriced-preview","tokens":{"input":10,"output":5,"total":15}}

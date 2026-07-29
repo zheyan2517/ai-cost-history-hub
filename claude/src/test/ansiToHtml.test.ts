@@ -78,8 +78,8 @@ describe("ansiToHtml", () => {
   });
 
   it("linkifies URLs inside ANSI-styled text", () => {
-    const result = ansiToHtml("\x1b[34mhttps://github.com/user/repo\x1b[0m");
-    expect(result).toContain('<a href="https://github.com/user/repo"');
+    const result = ansiToHtml("\x1b[34mhttps://github.com/example/repo\x1b[0m");
+    expect(result).toContain('<a href="https://github.com/example/repo"');
     expect(result).toContain("<span");
   });
 
@@ -119,8 +119,8 @@ describe("linkifyUrls", () => {
     });
 
     it("linkifies URLs with paths and query params", () => {
-      const result = linkifyUrls("PR at https://github.com/user/repo/pull/123?tab=files");
-      expect(result).toContain('<a href="https://github.com/user/repo/pull/123?tab=files"');
+      const result = linkifyUrls("PR at https://github.com/example/repo/pull/123?tab=files");
+      expect(result).toContain('<a href="https://github.com/example/repo/pull/123?tab=files"');
     });
 
     it("linkifies URLs with hash fragments", () => {

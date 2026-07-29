@@ -7,6 +7,8 @@ import subprocess
 import tempfile
 import urllib.parse
 import uuid
+import csv
+import os
 from pathlib import Path
 from collections import defaultdict
 from datetime import datetime
@@ -18,7 +20,7 @@ import argparse
 import shlex
 import shutil
 import sys
-from typing import TypedDict, DefaultDict
+from typing import TypedDict, DefaultDict, Sequence
 
 
 LOOPBACK_HOSTNAMES = {"localhost"}
@@ -57,6 +59,9 @@ class ModelStats(TypedDict):
     reasoning_tokens: int
     cost: float
     llm_time: float
+    known_pricing_events: int
+    unknown_pricing_events: int
+    pricing_status: str
 
 
 class ToolStats(TypedDict):
@@ -91,6 +96,7 @@ class SessionStats(TypedDict):
     tools: DefaultDict[str, ToolStats]
     tps_samples: list[tuple[int, float, str]]
     cost_events: list[tuple[datetime, str, float]]
+    llm_events: list[dict]
     cwd: str
 
 
@@ -114,6 +120,7 @@ class ProjectStats(TypedDict):
     first_activity: datetime | None
     last_activity: datetime | None
     tps_samples: list[tuple[int, float, str]]
+    usage_events: list[dict]
 
 
 class GlobalStats(TypedDict):
@@ -133,6 +140,7 @@ class GlobalStats(TypedDict):
     tools: DefaultDict[str, ToolStats]
     daily_stats: DefaultDict[str, DailyStats]
     tps_samples: list[tuple[int, float, str]]
+    usage_events: list[dict]
 
 
 class Session(TypedDict):
@@ -160,6 +168,12 @@ class Session(TypedDict):
     tools: dict[str, ToolStats]
     avg_tps: float
     subagent_sessions: list["Session"]
+    pricing_status: str
+
+
+class PricingResult(TypedDict):
+    cost: float
+    status: str
 
 
 # Helper functions to create properly-typed defaultdicts
@@ -174,6 +188,9 @@ def create_model_stats() -> ModelStats:
         "reasoning_tokens": 0,
         "cost": 0.0,
         "llm_time": 0.0,
+        "known_pricing_events": 0,
+        "unknown_pricing_events": 0,
+        "pricing_status": "",
     }
 
 
@@ -186,8 +203,11 @@ def create_daily_stats() -> DailyStats:
 
 
 # Session directories for different agents: (path, agent_command, source_type)
-# source_type: "standard" (pi/omp), "claude" (~/.claude/projects), "codex" (~/.codex/sessions)
-SESSIONS_DIRS = [
+# source_type: "standard" (pi/omp), "claude" (~/.claude/projects),
+# "codex" (~/.codex/sessions), "gemini" (~/.gemini/tmp).
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+CONFIG_PATH = PROJECT_ROOT / "config.json"
+DEFAULT_SESSIONS_DIRS = [
     (Path.home() / ".pi" / "agent" / "sessions", "pi", "standard"),
     (Path.home() / "agentbox" / "config" / ".pi" / "agent" / "sessions", "pi", "standard"),
     (Path.home() / ".omp" / "agent" / "sessions", "omp", "standard"),
@@ -195,6 +215,17 @@ SESSIONS_DIRS = [
     (Path.home() / ".codex" / "sessions", "codex", "codex"),
     (Path.home() / ".gemini" / "tmp", "gemini-cli", "gemini"),
 ]
+# Kept as a public mutable list for existing integrations and tests.
+SESSIONS_DIRS = list(DEFAULT_SESSIONS_DIRS)
+
+SESSION_DIR_SPECS = {
+    "session-dir": ("pi", "standard"),
+    "pi-dir": ("pi", "standard"),
+    "omp-dir": ("omp", "standard"),
+    "claude-dir": ("claude", "claude"),
+    "codex-dir": ("codex", "codex"),
+    "gemini-dir": ("gemini-cli", "gemini"),
+}
 TEMP_DIR = Path(tempfile.gettempdir()) / "pi-dashboard"
 ASSETS_DIR = Path(__file__).parent / "assets"
 
@@ -236,18 +267,20 @@ def get_session_id_from_file(
     return None
 
 
-# Manual pricing for models that report zero cost (price per million tokens).
-# Format: model_pattern -> {"input": price_per_M, "output": price_per_M, "cache_read": price_per_M}
-# Prices sourced from OpenRouter (openrouter.ai/api/v1/models) as of 2026-05
+# Fallback pricing used when a session does not report a billed cost
+# (price per million tokens). The dashboard labels these values as estimated.
+#
+# Format: model_pattern -> {"input": price_per_M, "output": price_per_M,
+# "cache_read": price_per_M, "cache_write": price_per_M}
 #
 # Rules:
 #  - Only add entries for specific known model versions. No broad family prefixes
 #    (e.g. "gpt-5", "gpt-4") — a generic pattern can silently misprice a totally
 #    different model in the same family at a wildly wrong rate.
 #  - More specific patterns must appear before less specific ones (dict is ordered).
-#  - Cache pricing from provider docs where available; 0.0 where unknown.
+#  - Cache pricing is included where available; 0.0 where unknown.
 MANUAL_PRICING = {
-    # ── Gemini (Google Cloud Code Assist / OpenRouter) ────────────────────────
+    # ── Gemini ───────────────────────────────────────────────────────────────
     "gemini-2.5-pro": {
         "input": 1.25,
         "output": 10.00,
@@ -452,12 +485,74 @@ MANUAL_PRICING = {
 }
 
 
-# Live pricing from OpenRouter, read from the committed models.json next to this
-# script (refresh it with `python3 update_models.py`). Prices are per-token
-# strings that we convert to dollars-per-million. MANUAL_PRICING above is the
-# offline fallback for models missing from the file.
-OPENROUTER_MODELS_FILE = Path(__file__).parent / "models.json"
-_OPENROUTER_PRICING: dict[str, dict[str, float]] | None = None
+def _unknown_pricing() -> PricingResult:
+    return {"cost": 0.0, "status": "unknown"}
+
+
+def _reported_pricing(cost: float) -> PricingResult:
+    return {"cost": max(0.0, float(cost)), "status": "reported"}
+
+
+def find_pricing_record(model: str) -> tuple[str, dict[str, float | str]] | None:
+    """Return the most specific fallback record matching *model*.
+
+    Matching is against normalized ids so vendor prefixes and dated model
+    ids work consistently, while the longest pattern prevents a generic model
+    from winning over a more specific variant.
+    """
+    normalized_model = _normalize_model_name(model)
+    best_pattern: str | None = None
+    for pattern in MANUAL_PRICING:
+        normalized_pattern = _normalize_model_name(pattern)
+        if normalized_pattern in normalized_model and (
+            best_pattern is None or len(normalized_pattern) > len(_normalize_model_name(best_pattern))
+        ):
+            best_pattern = pattern
+    if best_pattern is None:
+        return None
+    return best_pattern, MANUAL_PRICING[best_pattern]
+
+
+def price_model(
+    model: str,
+    input_tokens: int,
+    output_tokens: int,
+    cache_read_tokens: int,
+    cache_write_tokens: int = 0,
+) -> PricingResult:
+    """Estimate a model's cost from the local fallback pricing table."""
+    match = find_pricing_record(model)
+    if match is None:
+        return _unknown_pricing()
+
+    _, pricing = match
+    cost = (
+        (input_tokens / 1_000_000) * float(pricing.get("input", 0))
+        + (output_tokens / 1_000_000) * float(pricing.get("output", 0))
+        + (cache_read_tokens / 1_000_000) * float(pricing.get("cache_read", 0))
+        + (cache_write_tokens / 1_000_000) * float(pricing.get("cache_write", 0))
+    )
+    return {"cost": cost, "status": "estimated"}
+
+
+def resolve_usage_pricing(
+    model: str,
+    input_tokens: int,
+    output_tokens: int,
+    cache_read_tokens: int,
+    cache_write_tokens: int = 0,
+    reported_cost: float = 0.0,
+) -> PricingResult:
+    """Prefer a cost explicitly reported by the agent, then estimate it."""
+    if reported_cost > 0:
+        return _reported_pricing(reported_cost)
+    return price_model(
+        model,
+        input_tokens,
+        output_tokens,
+        cache_read_tokens,
+        cache_write_tokens,
+    )
 
 
 def _normalize_model_name(name: str) -> str:
@@ -473,74 +568,6 @@ def _normalize_model_name(name: str) -> str:
     return name.replace(".", "-")
 
 
-def _load_openrouter_models() -> dict:
-    """Return the OpenRouter models payload from the local models.json.
-
-    Returns {} when the file is missing or unreadable (built-in pricing is then
-    used as a fallback)."""
-    if not OPENROUTER_MODELS_FILE.exists():
-        print(
-            f"{OPENROUTER_MODELS_FILE.name} not found; using built-in pricing. "
-            "Run `python3 update_models.py` to fetch live pricing."
-        )
-        return {}
-    try:
-        return json.loads(OPENROUTER_MODELS_FILE.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError):
-        return {}
-
-
-def _build_openrouter_pricing() -> dict[str, dict[str, float]]:
-    """Build {normalized_model -> per-million pricing} from the OpenRouter data."""
-    pricing: dict[str, dict[str, float]] = {}
-    for m in _load_openrouter_models().get("data", []):
-        model_id = m.get("id")
-        raw = m.get("pricing") or {}
-        if not model_id:
-            continue
-
-        def per_million(key: str) -> float:
-            try:
-                return float(raw.get(key, 0) or 0) * 1_000_000
-            except (TypeError, ValueError):
-                return 0.0
-
-        entry = {
-            "input": per_million("prompt"),
-            "output": per_million("completion"),
-            "cache_read": per_million("input_cache_read"),
-            "cache_write": per_million("input_cache_write"),
-        }
-        key = _normalize_model_name(model_id)
-        # Don't let a $0 variant clobber an already-priced entry.
-        if key in pricing and entry["input"] == 0 and entry["output"] == 0:
-            continue
-        pricing[key] = entry
-    return pricing
-
-
-def get_openrouter_cost(
-    model: str,
-    input_tokens: int,
-    output_tokens: int,
-    cache_read_tokens: int,
-    cache_write_tokens: int = 0,
-) -> float | None:
-    """Cost from live OpenRouter pricing, or None when the model isn't listed."""
-    global _OPENROUTER_PRICING
-    if _OPENROUTER_PRICING is None:
-        _OPENROUTER_PRICING = _build_openrouter_pricing()
-    pricing = _OPENROUTER_PRICING.get(_normalize_model_name(model))
-    if not pricing:
-        return None
-    return (
-        (input_tokens / 1_000_000) * pricing["input"]
-        + (output_tokens / 1_000_000) * pricing["output"]
-        + (cache_read_tokens / 1_000_000) * pricing["cache_read"]
-        + (cache_write_tokens / 1_000_000) * pricing["cache_write"]
-    )
-
-
 def get_manual_cost(
     model: str,
     input_tokens: int,
@@ -548,34 +575,18 @@ def get_manual_cost(
     cache_read_tokens: int,
     cache_write_tokens: int = 0,
 ) -> float:
-    """Calculate cost, preferring live OpenRouter pricing, then the built-in table."""
-    or_cost = get_openrouter_cost(
-        model, input_tokens, output_tokens, cache_read_tokens, cache_write_tokens
-    )
-    if or_cost is not None:
-        return or_cost
+    """Return the fallback-table estimate, or zero when pricing is unknown.
 
-    model_lower = model.lower()
-    # Prefer the longest (most specific) matching pattern so e.g.
-    # "gemini-2.5-flash-lite" matches its own entry rather than the shorter
-    # "gemini-2.5-flash" pattern that happens to be a substring of it.
-    best_pattern = None
-    for pattern in MANUAL_PRICING:
-        if pattern in model_lower:
-            if best_pattern is None or len(pattern) > len(best_pattern):
-                best_pattern = pattern
-    if best_pattern is not None:
-        pricing = MANUAL_PRICING[best_pattern]
-        input_cost = (input_tokens / 1_000_000) * pricing["input"]
-        output_cost = (output_tokens / 1_000_000) * pricing["output"]
-        cache_read_cost = (cache_read_tokens / 1_000_000) * pricing.get(
-            "cache_read", 0
-        )
-        cache_write_cost = (cache_write_tokens / 1_000_000) * pricing.get(
-            "cache_write", 0
-        )
-        return input_cost + output_cost + cache_read_cost + cache_write_cost
-    return 0.0
+    New code should use :func:`price_model` so it can preserve the status and
+    distinguish an unknown model from a zero-cost model.
+    """
+    return price_model(
+        model,
+        input_tokens,
+        output_tokens,
+        cache_read_tokens,
+        cache_write_tokens,
+    )["cost"]
 
 
 def parse_timestamp(ts):
@@ -586,6 +597,19 @@ def parse_timestamp(ts):
         return datetime.fromisoformat(ts.replace("Z", "+00:00"))
     except (ValueError, TypeError):
         return None
+
+
+def to_nonnegative_int(value) -> int:
+    """Normalize optional token fields without aborting a whole session."""
+    try:
+        if value is None:
+            return 0
+        return max(0, int(value))
+    except (TypeError, ValueError):
+        try:
+            return max(0, int(float(value)))
+        except (TypeError, ValueError):
+            return 0
 
 
 def format_duration(seconds):
@@ -636,6 +660,21 @@ def format_tokens(value: int | float) -> str:
 def json_for_script(data) -> str:
     """Serialize JSON safely for embedding in a script tag."""
     return json.dumps(data).replace("</", "<\\/")
+
+
+def display_project_name(path: str) -> str:
+    """Return a non-sensitive project label for browser/export payloads."""
+    text = str(path or "").rstrip("/\\")
+    if not text:
+        return "unknown"
+    return re.split(r"[\\/]", text)[-1] or "unknown"
+
+
+def cost_display(cost: float, pricing_status: str = "") -> str:
+    if pricing_status == "unknown":
+        return "unknown"
+    prefix = "~" if pricing_status == "estimated" else ""
+    return f"{prefix}${cost:.2f}"
 
 
 def render_token_summary_card(global_stats: GlobalStats) -> str:
@@ -693,6 +732,11 @@ MODEL_STAT_FIELDS = (
     "llm_time",
 )
 
+MODEL_PRICING_FIELDS = (
+    "known_pricing_events",
+    "unknown_pricing_events",
+)
+
 
 def create_session_stats() -> SessionStats:
     """Create a zeroed stats record for one session file."""
@@ -714,6 +758,7 @@ def create_session_stats() -> SessionStats:
         "tools": defaultdict(create_tool_stats),
         "tps_samples": [],
         "cost_events": [],
+        "llm_events": [],
         "cwd": "",
     }
 
@@ -728,6 +773,28 @@ def _record_timestamp(stats: SessionStats, ts: datetime | None) -> None:
         stats["end"] = ts
 
 
+def _merge_pricing_status(current: str, new: str) -> str:
+    """Collapse event statuses for a model/session summary."""
+    if new == "unknown" or current == "unknown":
+        return "unknown"
+    if new == "estimated" or current == "estimated":
+        return "estimated"
+    if new == "reported" or current == "reported":
+        return "reported"
+    return new or current or "unknown"
+
+
+def _record_model_pricing(mstats: ModelStats, pricing: PricingResult) -> None:
+    status = pricing["status"]
+    if status == "unknown":
+        mstats["unknown_pricing_events"] += 1
+    else:
+        mstats["known_pricing_events"] += 1
+    mstats["pricing_status"] = _merge_pricing_status(
+        mstats["pricing_status"], status
+    )
+
+
 def record_llm_usage(
     stats: SessionStats,
     model: str,
@@ -740,6 +807,7 @@ def record_llm_usage(
     cost: float = 0.0,
     ts: datetime | None = None,
     llm_delta: float = 0.0,
+    pricing: PricingResult | None = None,
 ) -> None:
     """Record one LLM usage event into session and per-model stats."""
     total = (
@@ -748,6 +816,10 @@ def record_llm_usage(
         else input_tokens + output_tokens + cache_read_tokens + cache_write_tokens
     )
     model_name = model or "unknown"
+    if pricing is None:
+        pricing = _reported_pricing(cost) if cost > 0 else _unknown_pricing()
+    else:
+        cost = pricing["cost"]
 
     stats["messages"] += 1
     stats["input_tokens"] += input_tokens
@@ -767,6 +839,7 @@ def record_llm_usage(
     mstats["cache_write_tokens"] += cache_write_tokens
     mstats["reasoning_tokens"] += reasoning_tokens
     mstats["cost"] += cost
+    _record_model_pricing(mstats, pricing)
 
     if llm_delta > 0 and output_tokens > 0:
         stats["tps_samples"].append((output_tokens, llm_delta, model_name))
@@ -774,6 +847,21 @@ def record_llm_usage(
 
     if ts:
         stats["cost_events"].append((ts, model_name, cost))
+
+    stats["llm_events"].append(
+        {
+            "timestamp": ts,
+            "model": model_name,
+            "input_tokens": input_tokens,
+            "output_tokens": output_tokens,
+            "cache_read_tokens": cache_read_tokens,
+            "cache_write_tokens": cache_write_tokens,
+            "reasoning_tokens": reasoning_tokens,
+            "total_tokens": total,
+            "cost": cost,
+            "pricing_status": pricing["status"],
+        }
+    )
 
     _record_timestamp(stats, ts)
 
@@ -800,6 +888,7 @@ def create_project_stats(name: str, agent_cmd: str) -> ProjectStats:
         "first_activity": None,
         "last_activity": None,
         "tps_samples": [],
+        "usage_events": [],
     }
 
 
@@ -813,6 +902,11 @@ def build_session_record(
     subagent_sessions: list[Session] | None = None,
 ) -> Session:
     """Build the serializable session record used by the UI and registry."""
+    pricing_status = ""
+    for model_stats in stats["models"].values():
+        pricing_status = _merge_pricing_status(
+            pricing_status, model_stats.get("pricing_status", "unknown")
+        )
     return Session(
         file=filepath.name,
         path=str(filepath),
@@ -836,6 +930,7 @@ def build_session_record(
         tools=dict(stats["tools"]),
         avg_tps=calc_avg_tokens_per_sec(stats["tps_samples"]),
         subagent_sessions=subagent_sessions or [],
+        pricing_status=pricing_status or "unknown",
     )
 
 
@@ -846,6 +941,11 @@ def merge_model_stats(
         target_stats = target[model]
         for field in MODEL_STAT_FIELDS:
             target_stats[field] += source_stats.get(field, 0)
+        for field in MODEL_PRICING_FIELDS:
+            target_stats[field] += source_stats.get(field, 0)
+        target_stats["pricing_status"] = _merge_pricing_status(
+            target_stats["pricing_status"], source_stats.get("pricing_status", "unknown")
+        )
 
 
 def merge_tool_stats(
@@ -859,7 +959,10 @@ def merge_tool_stats(
 
 
 def accumulate_session_into_project(
-    project_stats: ProjectStats, stats: SessionStats
+    project_stats: ProjectStats,
+    stats: SessionStats,
+    *,
+    session_uid: str = "",
 ) -> None:
     """Add a parsed session (or subagent session) to a project aggregate."""
     project_stats["total_messages"] += stats["messages"]
@@ -876,6 +979,16 @@ def accumulate_session_into_project(
 
     merge_model_stats(project_stats["models"], stats["models"])
     merge_tool_stats(project_stats["tools"], stats["tools"])
+
+    for event in stats["llm_events"]:
+        project_stats["usage_events"].append(
+            {
+                **event,
+                "agent": project_stats["agent_cmd"],
+                "project": project_stats["name"],
+                "session_id": session_uid,
+            }
+        )
 
     # Attribute cost to the day/model it was actually incurred on, using each
     # LLM call's own (timestamp, model, cost) rather than splitting the
@@ -990,26 +1103,29 @@ def analyze_jsonl_file(filepath: Path) -> SessionStats:
                             cost = usage.get("cost", {})
                             model = msg.get("model", "unknown")
 
-                            input_tok = usage.get("input", 0)
-                            output_tok = usage.get("output", 0)
-                            cache_read_tok = usage.get("cacheRead", 0)
-                            cache_write_tok = usage.get("cacheWrite", 0)
-                            total_tok = usage.get("totalTokens") or (
+                            input_tok = to_nonnegative_int(usage.get("input", 0))
+                            output_tok = to_nonnegative_int(usage.get("output", 0))
+                            cache_read_tok = to_nonnegative_int(usage.get("cacheRead", 0))
+                            cache_write_tok = to_nonnegative_int(usage.get("cacheWrite", 0))
+                            total_tok = to_nonnegative_int(usage.get("totalTokens")) or (
                                 input_tok
                                 + output_tok
                                 + cache_read_tok
                                 + cache_write_tok
                             )
                             reported_cost = cost.get("total", 0)
-
-                            if reported_cost == 0:
-                                reported_cost = get_manual_cost(
-                                    model,
-                                    input_tok,
-                                    output_tok,
-                                    cache_read_tok,
-                                    cache_write_tok,
-                                )
+                            try:
+                                reported_cost = float(reported_cost or 0)
+                            except (TypeError, ValueError):
+                                reported_cost = 0.0
+                            pricing = resolve_usage_pricing(
+                                model,
+                                input_tok,
+                                output_tok,
+                                cache_read_tok,
+                                cache_write_tok,
+                                reported_cost,
+                            )
 
                             record_llm_usage(
                                 stats,
@@ -1019,9 +1135,10 @@ def analyze_jsonl_file(filepath: Path) -> SessionStats:
                                 cache_read_tok,
                                 cache_write_tok,
                                 total_tokens=total_tok,
-                                cost=reported_cost,
+                                cost=pricing["cost"],
                                 ts=ts,
                                 llm_delta=llm_delta,
+                                pricing=pricing,
                             )
 
                         # Track tool calls from assistant messages
@@ -1164,15 +1281,17 @@ def analyze_claude_jsonl_file(filepath: Path) -> SessionStats:
 
                     # Process usage data if present
                     if usage and model:
-                        input_tok = usage.get("input_tokens", 0)
-                        output_tok = usage.get("output_tokens", 0)
-                        cache_read_tok = usage.get("cache_read_input_tokens", 0)
-                        cache_write_tok = usage.get(
-                            "cache_creation_input_tokens", 0
+                        input_tok = to_nonnegative_int(usage.get("input_tokens", 0))
+                        output_tok = to_nonnegative_int(usage.get("output_tokens", 0))
+                        cache_read_tok = to_nonnegative_int(
+                            usage.get("cache_read_input_tokens", 0)
+                        )
+                        cache_write_tok = to_nonnegative_int(
+                            usage.get("cache_creation_input_tokens", 0)
                         )
                         total_tok = input_tok + output_tok + cache_read_tok + cache_write_tok
 
-                        cost = get_manual_cost(
+                        pricing = price_model(
                             model,
                             input_tok,
                             output_tok,
@@ -1188,9 +1307,10 @@ def analyze_claude_jsonl_file(filepath: Path) -> SessionStats:
                             cache_read_tok,
                             cache_write_tok,
                             total_tokens=total_tok,
-                            cost=cost,
+                            cost=pricing["cost"],
                             ts=ts,
                             llm_delta=llm_delta,
+                            pricing=pricing,
                         )
 
                     # Track tool_use calls from assistant content
@@ -1395,7 +1515,7 @@ def analyze_codex_jsonl_file(filepath: Path) -> SessionStats:
                     reasoning_tok = delta_usage["reasoning_tokens"]
                     total_tok = delta_usage["total_tokens"]
 
-                    cost = get_manual_cost(
+                    pricing = price_model(
                         model, input_tok, output_tok, cache_read_tok
                     )
 
@@ -1407,8 +1527,9 @@ def analyze_codex_jsonl_file(filepath: Path) -> SessionStats:
                         cache_read_tok,
                         reasoning_tokens=reasoning_tok,
                         total_tokens=total_tok,
-                        cost=cost,
+                        cost=pricing["cost"],
                         ts=ts,
+                        pricing=pricing,
                     )
 
                     if latest_total_usage:
@@ -1460,7 +1581,8 @@ def analyze_gemini_jsonl_file(filepath: Path) -> SessionStats:
     """Analyze a Gemini CLI JSONL session file and return stats."""
     stats = create_session_stats()
 
-    # Try to find cwd from history
+    # Prefer an explicit cwd in the record; Gemini's history sidecar is only
+    # a fallback for older sessions.
     project_name = filepath.parent.parent.name
     history_root = Path.home() / ".gemini" / "history" / project_name / ".project_root"
     if history_root.exists():
@@ -1480,6 +1602,8 @@ def analyze_gemini_jsonl_file(filepath: Path) -> SessionStats:
                     continue
 
                 record_type = data.get("type")
+                if not stats["cwd"] and data.get("cwd"):
+                    stats["cwd"] = str(data["cwd"])
                 # Gemini format uses startTime for the session meta line, and timestamp for others
                 ts_str = data.get("timestamp") or data.get("startTime")
                 ts = parse_timestamp(ts_str)
@@ -1508,10 +1632,10 @@ def analyze_gemini_jsonl_file(filepath: Path) -> SessionStats:
                             llm_delta = 0
                         last_request_ts = None
 
-                    raw_input_tok = tokens.get("input", 0)
-                    output_tok = tokens.get("output", 0)
-                    cache_read_tok = tokens.get("cached", 0)
-                    cache_write_tok = tokens.get("cacheWrite", 0)  # Check for explicit write tokens
+                    raw_input_tok = to_nonnegative_int(tokens.get("input", 0))
+                    output_tok = to_nonnegative_int(tokens.get("output", 0))
+                    cache_read_tok = to_nonnegative_int(tokens.get("cached", 0))
+                    cache_write_tok = to_nonnegative_int(tokens.get("cacheWrite", 0))
 
                     # Gemini's reported "input" token count is inclusive of any
                     # cached tokens served from context cache, so bill/store
@@ -1519,11 +1643,11 @@ def analyze_gemini_jsonl_file(filepath: Path) -> SessionStats:
                     # avoid double counting input + cache read (mirrors the
                     # same fix applied to the Codex analyzer above).
                     input_tok = max(0, raw_input_tok - cache_read_tok)
-                    total_tok = tokens.get(
-                        "total", input_tok + output_tok + cache_read_tok + cache_write_tok
+                    total_tok = to_nonnegative_int(tokens.get("total")) or (
+                        input_tok + output_tok + cache_read_tok + cache_write_tok
                     )
 
-                    cost = get_manual_cost(
+                    pricing = price_model(
                         model,
                         input_tok,
                         output_tok,
@@ -1539,9 +1663,10 @@ def analyze_gemini_jsonl_file(filepath: Path) -> SessionStats:
                         cache_read_tok,
                         cache_write_tok,
                         total_tokens=total_tok,
-                        cost=cost,
+                        cost=pricing["cost"],
                         ts=ts,
                         llm_delta=llm_delta,
+                        pricing=pricing,
                     )
 
                     # Process tool calls
@@ -1646,7 +1771,9 @@ def analyze_project(
                     )
                     SESSION_REGISTRY[sub_uid] = sub_session
                     subagent_sessions.append(sub_session)
-                    accumulate_session_into_project(project_stats, sub_stats)
+                    accumulate_session_into_project(
+                        project_stats, sub_stats, session_uid=sub_uid
+                    )
 
         # Get UID from file or generate random one
         session_uid = get_session_id_from_file(str(filepath), source_type) or str(
@@ -1664,7 +1791,9 @@ def analyze_project(
         )
         SESSION_REGISTRY[session_uid] = session
         project_stats["sessions"].append(session)
-        accumulate_session_into_project(project_stats, stats)
+        accumulate_session_into_project(
+            project_stats, stats, session_uid=session_uid
+        )
 
     return project_stats if project_stats["sessions"] else None
 
@@ -1680,6 +1809,33 @@ def split_agent_command(agent_cmd: str) -> list[str]:
         parts = [part.strip('"') for part in parts]
 
     return parts
+
+
+def shell_quote_path(path: str) -> str:
+    """Quote a local path for the shell used by the resume command."""
+    if os.name == "nt":
+        return subprocess.list2cmdline([path])
+    return shlex.quote(path)
+
+
+def build_resume_command(session: Session) -> str:
+    """Build a resume command from server-side session data."""
+    cwd = session.get("cwd", "")
+    agent_cmd = session.get("agent_cmd", "")
+    uid = session.get("uid", "")
+    if agent_cmd == "claude":
+        command = f"claude --resume {shell_quote_path(uid)}"
+    elif agent_cmd == "codex":
+        command = f"codex --resume {shell_quote_path(uid)}"
+    else:
+        command = (
+            f"{agent_cmd} --session {shell_quote_path(session.get('path', ''))}"
+        )
+    if not cwd:
+        return command
+    if os.name == "nt":
+        return f"cd /d {shell_quote_path(cwd)} && {command}"
+    return f"cd {shell_quote_path(cwd)} && {command}"
 
 
 def resolve_command_executable(cmd: list[str]) -> list[str]:
@@ -1831,7 +1987,9 @@ def _build_codex_project_stats(
         )
         SESSION_REGISTRY[session_uid] = session
         project_stats["sessions"].append(session)
-        accumulate_session_into_project(project_stats, stats)
+        accumulate_session_into_project(
+            project_stats, stats, session_uid=session_uid
+        )
 
     return project_stats if project_stats["sessions"] else None
 
@@ -1853,6 +2011,7 @@ def _accumulate_global_stats(
     global_stats["total_llm_time"] += project_stats["total_llm_time"]
     global_stats["total_tool_time"] += project_stats["total_tool_time"]
     global_stats["tps_samples"].extend(project_stats["tps_samples"])
+    global_stats["usage_events"].extend(project_stats["usage_events"])
 
     merge_model_stats(global_stats["models"], project_stats["models"])
     merge_tool_stats(global_stats["tools"], project_stats["tools"])
@@ -1868,7 +2027,118 @@ def _accumulate_global_stats(
             ) + mcost
 
 
-def collect_all_stats() -> tuple[list[ProjectStats], GlobalStats]:
+def _as_path_values(value) -> list[str]:
+    if value is None:
+        return []
+    if isinstance(value, str):
+        return [value]
+    if isinstance(value, (list, tuple)):
+        return [str(item) for item in value if item]
+    return []
+
+
+def _config_session_values(config: dict) -> dict[str, list[str]]:
+    raw = config.get("sessionDirs")
+    if raw is None:
+        raw = config.get("paths", {}).get("sessionDirs", {})
+    if not isinstance(raw, dict):
+        return {}
+
+    aliases = {
+        "session-dir": ("session", "sessionDirs", "standard"),
+        "pi-dir": ("pi", "piDirs"),
+        "omp-dir": ("omp", "ompDirs"),
+        "claude-dir": ("claude", "claudeDirs"),
+        "codex-dir": ("codex", "codexDirs"),
+        "gemini-dir": ("gemini", "geminiDirs", "gemini-cli"),
+    }
+    result: dict[str, list[str]] = {}
+    for arg_name, keys in aliases.items():
+        values: list[str] = []
+        for key in keys:
+            values.extend(_as_path_values(raw.get(key)))
+        if values:
+            result[arg_name] = values
+    return result
+
+
+def build_session_dirs(
+    *,
+    config_path: Path | None = None,
+    cli_values: dict[str, list[str] | None] | None = None,
+    include_defaults: bool = True,
+) -> list[tuple[Path, str, str]]:
+    """Build a deduplicated, read-only list of session roots.
+
+    Paths can be repeated on the command line and are resolved relative to the
+    current process. Config-file paths are resolved relative to that config
+    file. Missing paths are retained so a portable config can be shared across
+    machines without failing startup.
+    """
+    config_path = config_path or CONFIG_PATH
+    entries: list[tuple[Path, str, str]] = []
+    if include_defaults:
+        entries.extend(DEFAULT_SESSIONS_DIRS)
+
+    config_values: dict[str, list[str]] = {}
+    if config_path.is_file():
+        try:
+            config_data = json.loads(config_path.read_text(encoding="utf-8"))
+            if isinstance(config_data, dict):
+                config_values = _config_session_values(config_data)
+        except (OSError, json.JSONDecodeError):
+            config_values = {}
+
+    def append_values(
+        arg_name: str, values: list[str], base_dir: Path
+    ) -> None:
+        spec = SESSION_DIR_SPECS.get(arg_name)
+        if spec is None:
+            return
+        agent_cmd, source_type = spec
+        for raw_value in values:
+            path = Path(raw_value).expanduser()
+            if not path.is_absolute():
+                path = base_dir / path
+            entries.append((path.resolve(), agent_cmd, source_type))
+
+    for arg_name, values in config_values.items():
+        append_values(arg_name, values, config_path.parent)
+    for arg_name, values in (cli_values or {}).items():
+        if values:
+            append_values(arg_name, values, Path.cwd())
+
+    result: list[tuple[Path, str, str]] = []
+    seen: set[tuple[str, str]] = set()
+    for path, agent_cmd, source_type in entries:
+        key_path = str(path).casefold() if os.name == "nt" else str(path)
+        key = (key_path, source_type)
+        if key in seen:
+            continue
+        seen.add(key)
+        result.append((path, agent_cmd, source_type))
+    return result
+
+
+def iter_project_dirs(sessions_dir: Path):
+    """Yield project roots from a session directory or direct fixture path."""
+    if not sessions_dir.is_dir():
+        return
+    if any(sessions_dir.glob("*.jsonl")):
+        yield sessions_dir
+        return
+    try:
+        children = sorted(sessions_dir.iterdir())
+    except OSError:
+        return
+    for project_dir in children:
+        if project_dir.is_dir() and not project_dir.name.startswith("."):
+            yield project_dir
+
+
+def collect_all_stats(
+    sessions_dirs: Sequence[tuple[Path, str, str]] | None = None,
+) -> tuple[list[ProjectStats], GlobalStats]:
     """Collect statistics from all projects."""
     # Clear the session registry to avoid stale entries on reload
     clear_session_registry()
@@ -1891,9 +2161,11 @@ def collect_all_stats() -> tuple[list[ProjectStats], GlobalStats]:
         "tools": defaultdict(create_tool_stats),
         "daily_stats": defaultdict(create_daily_stats),
         "tps_samples": [],
+        "usage_events": [],
     }
 
-    for sessions_dir, agent_cmd, source_type in SESSIONS_DIRS:
+    active_dirs = SESSIONS_DIRS if sessions_dirs is None else sessions_dirs
+    for sessions_dir, agent_cmd, source_type in active_dirs:
         if not sessions_dir.exists():
             continue
 
@@ -1918,10 +2190,7 @@ def collect_all_stats() -> tuple[list[ProjectStats], GlobalStats]:
             continue
 
         # Standard, Claude, Gemini: iterate per-project subdirectories
-        for project_dir in sessions_dir.iterdir():
-            if not project_dir.is_dir() or project_dir.name.startswith("."):
-                continue
-
+        for project_dir in iter_project_dirs(sessions_dir):
             project_stats = analyze_project(project_dir, agent_cmd, source_type)
 
             if project_stats:
@@ -1931,9 +2200,99 @@ def collect_all_stats() -> tuple[list[ProjectStats], GlobalStats]:
     return all_projects, global_stats
 
 
-def generate_html():
+MONTHLY_EXPORT_FIELDS = (
+    "date",
+    "timestamp",
+    "agent",
+    "project",
+    "session_id",
+    "model",
+    "input_tokens",
+    "output_tokens",
+    "cache_read_tokens",
+    "cache_write_tokens",
+    "reasoning_tokens",
+    "total_tokens",
+    "estimated_cost_usd",
+    "pricing_status",
+)
+
+
+def usage_event_to_export_row(event: dict) -> dict[str, object]:
+    timestamp = event.get("timestamp")
+    timestamp_text = timestamp.isoformat() if isinstance(timestamp, datetime) else ""
+    status = str(event.get("pricing_status") or "unknown")
+    return {
+        "date": timestamp.strftime("%Y-%m-%d") if isinstance(timestamp, datetime) else "",
+        "timestamp": timestamp_text,
+        "agent": event.get("agent", ""),
+        "project": display_project_name(str(event.get("project", ""))),
+        "session_id": event.get("session_id", ""),
+        "model": event.get("model", "unknown"),
+        "input_tokens": event.get("input_tokens", 0),
+        "output_tokens": event.get("output_tokens", 0),
+        "cache_read_tokens": event.get("cache_read_tokens", 0),
+        "cache_write_tokens": event.get("cache_write_tokens", 0),
+        "reasoning_tokens": event.get("reasoning_tokens", 0),
+        "total_tokens": event.get("total_tokens", 0),
+        "estimated_cost_usd": (
+            None if status == "unknown" else round(float(event.get("cost", 0.0)), 10)
+        ),
+        "pricing_status": status,
+    }
+
+
+def export_monthly_usage(
+    month: str,
+    output_format: str,
+    output_path: Path | None = None,
+    sessions_dirs: Sequence[tuple[Path, str, str]] | None = None,
+) -> Path:
+    """Export one calendar month's LLM calls to CSV or JSON."""
+    if not re.fullmatch(r"\d{4}-\d{2}", month):
+        raise ValueError("month must use YYYY-MM format")
+    if output_format not in {"csv", "json"}:
+        raise ValueError("output format must be csv or json")
+
+    _, global_stats = collect_all_stats(sessions_dirs)
+    rows = [
+        usage_event_to_export_row(event)
+        for event in global_stats["usage_events"]
+        if isinstance(event.get("timestamp"), datetime)
+        and event["timestamp"].strftime("%Y-%m") == month
+    ]
+    rows.sort(key=lambda row: (str(row["timestamp"]), str(row["session_id"])))
+
+    output_path = output_path or Path.cwd() / f"monthly-{month}.{output_format}"
+    output_path = output_path.expanduser().resolve()
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    if output_format == "csv":
+        with output_path.open("w", encoding="utf-8", newline="") as handle:
+            writer = csv.DictWriter(handle, fieldnames=MONTHLY_EXPORT_FIELDS)
+            writer.writeheader()
+            writer.writerows(rows)
+    else:
+        output_path.write_text(
+            json.dumps(
+                {
+                    "month": month,
+                    "events": rows,
+                    "event_count": len(rows),
+                },
+                ensure_ascii=False,
+                indent=2,
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+    return output_path
+
+
+def generate_html(
+    sessions_dirs: Sequence[tuple[Path, str, str]] | None = None,
+):
     """Generate HTML dashboard."""
-    all_projects, global_stats = collect_all_stats()
+    all_projects, global_stats = collect_all_stats(sessions_dirs)
 
     # Sort projects by cost for initial display
     all_projects.sort(key=lambda p: -p["total_cost"])
@@ -1945,6 +2304,7 @@ def generate_html():
         for s in p["sessions"]:
             duration_secs = s["duration"] if s["duration"] else 0
             llm_secs = s["llm_time"] if s["llm_time"] else 0
+            project_label = display_project_name(p["name"])
 
             # Include subagent sessions in JSON
             sub_sessions_json = []
@@ -1957,11 +2317,8 @@ def generate_html():
                     {
                         "file": sub["file"],
                         "uid": sub["uid"],
-                        "path": sub[
-                            "path"
-                        ],  # Keep path for resume command (local use only)
                         "relative_path": sub["relative_path"],
-                        "cwd": sub["cwd"],
+                        "project_name": display_project_name(sub["cwd"] or p["name"]),
                         "messages": sub["messages"],
                         "tokens": sub["tokens"],
                         "input_tokens": sub["input_tokens"],
@@ -1982,6 +2339,7 @@ def generate_html():
                         "tool_time": sub_tool,
                         "tool_time_display": format_duration(sub_tool),
                         "avg_tps": sub_tps,
+                        "pricing_status": sub["pricing_status"],
                     }
                 )
 
@@ -1991,9 +2349,8 @@ def generate_html():
                 {
                     "file": s["file"],
                     "uid": s["uid"],
-                    "path": s["path"],  # Keep path for resume command (local use only)
                     "relative_path": s.get("relative_path", s["file"]),
-                    "cwd": s["cwd"],
+                    "project_name": project_label,
                     "messages": s["messages"],
                     "tokens": s["tokens"],
                     "input_tokens": s["input_tokens"],
@@ -2014,6 +2371,7 @@ def generate_html():
                     "tool_time": tool_secs,
                     "tool_time_display": format_duration(tool_secs),
                     "avg_tps": session_tps,
+                    "pricing_status": s["pricing_status"],
                     "subagent_sessions": sub_sessions_json,
                 }
             )
@@ -2038,6 +2396,7 @@ def generate_html():
                     "cache_write_tokens": mstats["cache_write_tokens"],
                     "reasoning_tokens": mstats["reasoning_tokens"],
                     "cost": mstats["cost"],
+                    "pricing_status": mstats["pricing_status"] or "unknown",
                     "avg_tps": model_tps,
                 }
             )
@@ -2066,9 +2425,15 @@ def generate_html():
             )
 
         project_avg_tps = calc_avg_tokens_per_sec(p["tps_samples"])
+        project_pricing_status = ""
+        for model_stats in p["models"].values():
+            project_pricing_status = _merge_pricing_status(
+                project_pricing_status,
+                model_stats.get("pricing_status", "unknown"),
+            )
         projects_json.append(
             {
-                "name": p["name"],
+                "name": display_project_name(p["name"]),
                 "agent_cmd": p["agent_cmd"],  # Needed for resume command
                 "sessions": len(p["sessions"]),
                 "sessions_list": sessions_json,
@@ -2080,6 +2445,7 @@ def generate_html():
                 "cache_write_tokens": p["total_cache_write_tokens"],
                 "reasoning_tokens": p["total_reasoning_tokens"],
                 "cost": p["total_cost"],
+                "pricing_status": project_pricing_status or "unknown",
                 "llm_time": p["total_llm_time"],
                 "llm_time_display": format_duration(p["total_llm_time"]),
                 "tool_time": p["total_tool_time"],
@@ -2130,6 +2496,7 @@ def generate_html():
                 "reasoning_tokens": mstats.get("reasoning_tokens", 0),
                 "llm_time": mstats.get("llm_time", 0),
                 "cost": mstats["cost"],
+                "pricing_status": mstats.get("pricing_status") or "unknown",
                 "avg_tps": model_tps,
                 "pct": mstats["cost"] / total_cost_val * 100,
             }
@@ -2156,6 +2523,13 @@ def generate_html():
                 else "0s",
                 "pct": tstats["time"] / total_tool_time_val * 100,
             }
+        )
+
+    global_pricing_status = ""
+    for model_stats in global_stats["models"].values():
+        global_pricing_status = _merge_pricing_status(
+            global_pricing_status,
+            model_stats.get("pricing_status", "unknown"),
         )
 
     dashboard_css = load_asset("dashboard.css")
@@ -2186,11 +2560,10 @@ def generate_html():
     <div class="container">
         <h1>Cost Dashboard</h1>
         <p class="subtitle">Generated on {datetime.now().strftime("%Y-%m-%d %H:%M:%S")} <span class="refresh-note">Refresh page for updated stats</span></p>
-
         <div class="stats-grid">
             <div class="stat-card">
                 <div class="label">Total Cost</div>
-                <div class="value cost">${global_stats["total_cost"]:.2f}</div>
+                <div class="value cost">{cost_display(global_stats["total_cost"], global_pricing_status or "unknown")}</div>
             </div>
             <div class="stat-card">
                 <div class="label">Projects</div>
@@ -2348,7 +2721,9 @@ class DashboardHandler(http.server.BaseHTTPRequestHandler):
             self.send_response(200)
             self.send_header("Content-type", "text/html; charset=utf-8")
             self.end_headers()
-            html_content = generate_html()
+            html_content = generate_html(
+                getattr(self.server, "session_dirs", None)
+            )
             self.wfile.write(html_content.encode("utf-8"))
 
         elif parsed.path.startswith("/assets/"):
@@ -2380,6 +2755,21 @@ class DashboardHandler(http.server.BaseHTTPRequestHandler):
             self.send_header("Cache-Control", "public, max-age=3600")
             self.end_headers()
             self.wfile.write(data)
+
+        elif parsed.path == "/resume":
+            uid = query.get("uid", [""])[0]
+            session_info = SESSION_REGISTRY.get(uid)
+            if not session_info:
+                self.send_response(404)
+                self.end_headers()
+                return
+            command = build_resume_command(session_info)
+            payload = command.encode("utf-8")
+            self.send_response(200)
+            self.send_header("Content-type", "text/plain; charset=utf-8")
+            self.send_header("Content-Length", str(len(payload)))
+            self.end_headers()
+            self.wfile.write(payload)
 
         elif parsed.path == "/session":
             uid = query.get("uid", [""])[0]
@@ -2430,12 +2820,70 @@ def main():
     parser.add_argument(
         "-p", "--port", type=int, default=8753, help="Port to serve on (default: 8753)"
     )
+    parser.add_argument(
+        "--config",
+        default=str(CONFIG_PATH),
+        help="JSON config containing optional sessionDirs paths",
+    )
+    parser.add_argument(
+        "--no-default-session-dirs",
+        action="store_true",
+        help="Only scan explicitly configured or command-line session directories",
+    )
+    for option_name in SESSION_DIR_SPECS:
+        parser.add_argument(
+            f"--{option_name}",
+            dest=option_name.replace("-", "_"),
+            action="append",
+            metavar="PATH",
+            help=f"Additional {option_name} path; repeat to scan multiple paths",
+        )
+    parser.add_argument(
+        "--export-monthly",
+        metavar="YYYY-MM",
+        help="Export LLM calls for a month and exit",
+    )
+    parser.add_argument(
+        "--format",
+        choices=("csv", "json"),
+        default="csv",
+        dest="export_format",
+        help="Monthly export format (default: csv)",
+    )
+    parser.add_argument(
+        "--output",
+        type=Path,
+        help="Monthly export output file (default: monthly-YYYY-MM.<format>)",
+    )
     args = parser.parse_args()
 
+    cli_values = {
+        option_name: getattr(args, option_name.replace("-", "_"))
+        for option_name in SESSION_DIR_SPECS
+    }
+    sessions_dirs = build_session_dirs(
+        config_path=Path(args.config).expanduser(),
+        cli_values=cli_values,
+        include_defaults=not args.no_default_session_dirs,
+    )
+
+    if args.export_monthly:
+        try:
+            output_path = export_monthly_usage(
+                args.export_monthly,
+                args.export_format,
+                args.output,
+                sessions_dirs,
+            )
+        except (OSError, ValueError) as exc:
+            parser.error(str(exc))
+        print(output_path)
+        return
+
     # Check if any sessions directory exists
-    any_exists = any(sessions_dir.exists() for sessions_dir, _, _ in SESSIONS_DIRS)
+    any_exists = any(sessions_dir.exists() for sessions_dir, _, _ in sessions_dirs)
     if not any_exists:
-        print("⚠️  No sessions directories found. No data to display yet.")
+        print("[info] No sessions directories found. No data to display yet.")
 
     # Start server
     class DashboardServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
@@ -2447,11 +2895,12 @@ def main():
             socketserver.TCPServer.server_bind(self)
 
     httpd = DashboardServer((args.host, args.port), DashboardHandler)
+    httpd.session_dirs = sessions_dirs
     print("Cost Dashboard (local agent sessions)")
     print(f"   Serving on: http://{args.host}:{args.port}")
     print("   Data from:")
-    for sessions_dir, agent_cmd, source_type in SESSIONS_DIRS:
-        exists = "✓" if sessions_dir.exists() else "✗"
+    for sessions_dir, agent_cmd, source_type in sessions_dirs:
+        exists = "[ok]" if sessions_dir.exists() else "[--]"
         print(f"     {exists} {sessions_dir} ({agent_cmd})")
     print("\n   Press Ctrl+C to stop\n")
 
@@ -2462,7 +2911,7 @@ def main():
         while True:
             httpd.handle_request()
     except KeyboardInterrupt:
-        print("\n👋 Shutting down...")
+        print("\nShutting down...")
     finally:
         httpd.server_close()
 

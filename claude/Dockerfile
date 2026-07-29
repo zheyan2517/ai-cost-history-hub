@@ -53,5 +53,5 @@ ENV PORT=3727
 EXPOSE 3727
 USER achh
 
-ENTRYPOINT ["history-hub-server", "--serve", "--host", "0.0.0.0"]
+ENTRYPOINT ["history-hub-server", "--serve", "--host", "127.0.0.1"]
 CMD ["--port", "3727"]

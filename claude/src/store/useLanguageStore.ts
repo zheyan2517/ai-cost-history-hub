@@ -12,7 +12,10 @@ interface LanguageStore {
 }
 
 /** Product UI is English-only. */
-const getSupportedLanguage = (_lang?: string): SupportedLanguage => "en";
+const getSupportedLanguage = (lang?: string): SupportedLanguage => {
+  void lang;
+  return "en";
+};
 
 export const useLanguageStore = create<LanguageStore>((set) => ({
   language: "en",

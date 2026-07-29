@@ -241,9 +241,12 @@ fn spawn_dashboard(agent_dir: &Path, port: u16) -> Result<(Child, PathBuf), Stri
         cmd.creation_flags(CREATE_NO_WINDOW);
     }
 
-    let child = cmd
-        .spawn()
-        .map_err(|e| format!("Failed to start cost dashboard with {:?}: {e}", python))?;
+    let child = cmd.spawn().map_err(|e| {
+        format!(
+            "Failed to start cost dashboard with {}: {e}",
+            python.display()
+        )
+    })?;
     Ok((child, log_path))
 }
 

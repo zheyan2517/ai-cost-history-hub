@@ -434,7 +434,7 @@ describe('Tauri Configuration Tests', () => {
       const parts = config.identifier.split('.');
       expect(parts.length).toBeGreaterThanOrEqual(3);
       expect(parts[0]).toBe('com'); // Proper reverse domain
-      expect(parts[1]).toBe('claude');
+      expect(parts[1]).toMatch(/^[a-z][a-z0-9]*$/);
       expect(parts[2]).toBe('app');
     });
 

@@ -118,8 +118,8 @@ mod tests {
     #[test]
     fn round_trip_host() {
         assert_eq!(
-            extract_flag_value(&argv(&["--host=0.0.0.0"]), "--host"),
-            Some("0.0.0.0".into())
+            extract_flag_value(&argv(&["--host=127.0.0.1"]), "--host"),
+            Some("127.0.0.1".into())
         );
     }
 

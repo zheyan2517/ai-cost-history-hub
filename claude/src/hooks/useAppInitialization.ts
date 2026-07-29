@@ -77,7 +77,10 @@ export function useAppInitialization(deps: {
       if (language !== "en") {
         useLanguageStore.setState({ language: "en" as SupportedLanguage });
       }
-      if (i18nInstance.language !== "en") {
+      if (
+        i18nInstance.language !== "en" &&
+        typeof i18nInstance.changeLanguage === "function"
+      ) {
         void i18nInstance.changeLanguage("en");
       }
     };

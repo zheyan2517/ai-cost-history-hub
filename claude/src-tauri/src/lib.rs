@@ -11,9 +11,6 @@ pub mod wsl;
 pub mod server;
 
 #[cfg(feature = "webui-server")]
-const ALLOW_UNSAFE_NO_AUTH_FLAG: &str = "--allow-unsafe-no-auth";
-
-#[cfg(feature = "webui-server")]
 const MIN_CUSTOM_TOKEN_LENGTH: usize = 32;
 
 #[cfg(feature = "webui-server")]
@@ -300,7 +297,7 @@ fn run_tauri() {
             // Stop the local cost service when the desktop app exits.
             if let tauri::RunEvent::Exit = event {
                 if let Some(state) = app.try_state::<CostDashboardState>() {
-                    shutdown_cost_dashboard(&*state);
+                    shutdown_cost_dashboard(&state);
                 }
             }
 
@@ -434,7 +431,7 @@ fn run_server(args: &[String]) {
         .and_then(|v| v.parse::<u16>().ok())
         .unwrap_or(3727);
     let host = crate::cli_args::extract_flag_value(args, "--host")
-        .unwrap_or_else(|| "0.0.0.0".to_string());
+        .unwrap_or_else(|| "127.0.0.1".to_string());
     let dist_dir = crate::cli_args::extract_flag_value(args, "--dist");
     let read_only = args.iter().any(|a| a == "--read-only");
     let base_path = crate::cli_args::extract_flag_value(args, "--base-path")
@@ -450,16 +447,12 @@ fn run_server(args: &[String]) {
         eprintln!("{message}");
         std::process::exit(2);
     });
-    let allow_unsafe_no_auth = args.iter().any(|a| a == ALLOW_UNSAFE_NO_AUTH_FLAG);
-
-    if let Err(message) =
-        validate_auth_startup_options(&host, resolved_auth.auth.is_enabled(), allow_unsafe_no_auth)
-    {
+    if let Err(message) = validate_auth_startup_options(&host) {
         eprintln!("{message}");
         std::process::exit(2);
     }
 
-    if let Err(message) = validate_account_cookie_security(&host, &resolved_auth.startup) {
+    if let Err(message) = validate_account_cookie_security(&host) {
         eprintln!("{message}");
         std::process::exit(2);
     }
@@ -476,13 +469,7 @@ fn run_server(args: &[String]) {
         event_tx,
     });
 
-    // Print access info — resolve a routable IP when bound to 0.0.0.0
-    let display_host = if host == "0.0.0.0" {
-        get_local_ip().unwrap_or_else(|| host.clone())
-    } else {
-        host.clone()
-    };
-    let display_addr = format!("{display_host}:{port}");
+    let display_addr = format!("{host}:{port}");
     match &resolved_auth.startup {
         AuthStartup::Token { token, source } => {
             let preview: String = token.chars().take(8).collect();
@@ -528,10 +515,6 @@ fn run_server(args: &[String]) {
             );
             if *secure_cookies {
                 eprintln!("   Secure cookies enabled; serve behind HTTPS.");
-            } else if !is_loopback_bind_host(&host) {
-                eprintln!(
-                    "⚠ Secure cookies are disabled. Add {SECURE_COOKIES_FLAG} when using HTTPS reverse proxy."
-                );
             }
             eprintln!(
                 "   Open in browser: http://{display_addr}{}",
@@ -540,12 +523,6 @@ fn run_server(args: &[String]) {
         }
         AuthStartup::Disabled => {
             eprintln!("🔓 Authentication disabled (--no-auth)");
-            if !is_loopback_bind_host(&host) {
-                eprintln!(
-                    "⚠ WARNING: --no-auth on a non-loopback host exposes your data to the network!"
-                );
-                eprintln!("  Anyone on your network can read your conversation history without authentication.");
-            }
             eprintln!(
                 "   Open in browser: http://{display_addr}{}",
                 server_base_href(&base_path)
@@ -572,17 +549,6 @@ fn server_base_href(base_path: &str) -> String {
     } else {
         format!("{base_path}/")
     }
-}
-
-/// Detect the machine's LAN IP address by connecting a UDP socket to an
-/// external address.  No actual traffic is sent — the OS just picks the
-/// outbound interface, giving us the local IP.
-#[cfg(feature = "webui-server")]
-fn get_local_ip() -> Option<String> {
-    let socket = std::net::UdpSocket::bind("0.0.0.0:0").ok()?;
-    socket.connect("8.8.8.8:80").ok()?;
-    let addr = socket.local_addr().ok()?;
-    Some(addr.ip().to_string())
 }
 
 #[cfg(feature = "webui-server")]
@@ -772,42 +738,26 @@ Prefer: CCHV_AUTH_PASSWORD=<password> {PRINT_PASSWORD_HASH_FLAG}"
 }
 
 #[cfg(feature = "webui-server")]
-fn validate_auth_startup_options(
-    host: &str,
-    auth_enabled: bool,
-    allow_unsafe_no_auth: bool,
-) -> Result<(), String> {
-    if auth_enabled || is_loopback_bind_host(host) || allow_unsafe_no_auth {
+fn validate_auth_startup_options(host: &str) -> Result<(), String> {
+    if is_loopback_bind_host(host) {
         return Ok(());
     }
 
     Err(format!(
-        "Refusing to start with --no-auth on non-loopback host '{host}'. \
-Use --host 127.0.0.1 for local-only access, enable token auth, or add \
-{ALLOW_UNSAFE_NO_AUTH_FLAG} if you intentionally want unauthenticated network access."
+        "Refusing to start on non-loopback host '{host}'. \
+The server is forced to local-only access; use --host 127.0.0.1, --host localhost, or --host ::1."
     ))
 }
 
-/// Account auth issues a multi-day session bearer cookie. On a non-loopback bind
-/// without secure cookies (i.e. plain HTTP), that cookie travels in cleartext and can
-/// be sniffed and replayed to hijack the session. Refuse to start in that case rather
-/// than only warning — mirroring the `--no-auth` guard. Loopback binds (local-only) and
-/// `--secure-cookies` (HTTPS / TLS-terminating reverse proxy) are allowed.
+/// Account auth is available only on the loopback interface, like every other
+/// server mode. This keeps session cookies and local history on the host.
 #[cfg(feature = "webui-server")]
-fn validate_account_cookie_security(host: &str, startup: &AuthStartup) -> Result<(), String> {
-    if let AuthStartup::Account {
-        secure_cookies: false,
-        ..
-    } = startup
-    {
-        if !is_loopback_bind_host(host) {
-            return Err(format!(
-                "Refusing to start account auth on non-loopback host '{host}' without secure cookies. \
-The session cookie would be sent in cleartext and could be hijacked. \
-Add {SECURE_COOKIES_FLAG} when serving over HTTPS (e.g. behind a TLS reverse proxy), \
-or use --host 127.0.0.1 for local-only access."
-            ));
-        }
+fn validate_account_cookie_security(host: &str) -> Result<(), String> {
+    if !is_loopback_bind_host(host) {
+        return Err(format!(
+            "Refusing to start on non-loopback host '{host}'. \
+The server is forced to local-only access; use --host 127.0.0.1, --host localhost, or --host ::1."
+        ));
     }
     Ok(())
 }
@@ -816,42 +766,16 @@ or use --host 127.0.0.1 for local-only access."
 mod auth_startup_tests {
     use super::*;
 
-    fn account(secure_cookies: bool) -> AuthStartup {
-        AuthStartup::Account {
-            username: "admin".to_string(),
-            source: AccountAuthSource::Cli,
-            secure_cookies,
-        }
+    #[test]
+    fn non_loopback_hosts_are_rejected() {
+        assert!(validate_account_cookie_security("0.0.0.1").is_err());
+        assert!(validate_account_cookie_security("192.168.1.10").is_err());
     }
 
     #[test]
-    fn account_insecure_cookies_refused_on_non_loopback() {
-        assert!(validate_account_cookie_security("0.0.0.0", &account(false)).is_err());
-        assert!(validate_account_cookie_security("192.168.1.10", &account(false)).is_err());
-    }
-
-    #[test]
-    fn account_insecure_cookies_allowed_on_loopback() {
-        assert!(validate_account_cookie_security("127.0.0.1", &account(false)).is_ok());
-        assert!(validate_account_cookie_security("localhost", &account(false)).is_ok());
-    }
-
-    #[test]
-    fn account_secure_cookies_allowed_anywhere() {
-        assert!(validate_account_cookie_security("0.0.0.0", &account(true)).is_ok());
-    }
-
-    #[test]
-    fn non_account_modes_are_unaffected() {
-        assert!(validate_account_cookie_security("0.0.0.0", &AuthStartup::Disabled).is_ok());
-        assert!(validate_account_cookie_security(
-            "0.0.0.0",
-            &AuthStartup::Token {
-                token: "x".to_string(),
-                source: AuthTokenSource::Cli,
-            },
-        )
-        .is_ok());
+    fn loopback_hosts_are_allowed() {
+        assert!(validate_account_cookie_security("127.0.0.1").is_ok());
+        assert!(validate_account_cookie_security("localhost").is_ok());
     }
 }
 

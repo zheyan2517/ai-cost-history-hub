@@ -145,13 +145,13 @@ describe("AnsiText Component", () => {
   describe("URL linkification", () => {
     it("renders clickable links for https URLs", () => {
       const { container } = render(
-        <AnsiText text="Visit https://github.com/user/repo for details" />
+        <AnsiText text="Visit https://github.com/example/repo for details" />
       );
 
       const link = container.querySelector("a.ansi-url");
       expect(link).toBeInTheDocument();
-      expect(link?.getAttribute("href")).toBe("https://github.com/user/repo");
-      expect(link?.textContent).toBe("https://github.com/user/repo");
+      expect(link?.getAttribute("href")).toBe("https://github.com/example/repo");
+      expect(link?.textContent).toBe("https://github.com/example/repo");
     });
 
     it("renders clickable links inside ANSI-styled text", () => {

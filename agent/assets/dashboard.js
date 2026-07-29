@@ -171,14 +171,21 @@ const dashboardData = window.dashboardData || {};
 
 const projects = dashboardData.projects || [];
 
-function buildResumeCmd(agentCmd, cwd, sessionPath, sessionUid) {
-    if (agentCmd === 'claude') {
-        return 'cd "' + cwd + '" && claude --resume "' + sessionUid + '"';
-    } else if (agentCmd === 'codex') {
-        return 'cd "' + cwd + '" && codex --resume "' + sessionUid + '"';
-    } else {
-        return 'cd "' + cwd + '" && ' + agentCmd + ' --session "' + sessionPath + '"';
-    }
+function buildResumeUrl(sessionUid) {
+    return '/resume?uid=' + encodeURIComponent(sessionUid);
+}
+
+function displayCost(item) {
+    if (item?.pricing_status === 'unknown') return 'unknown';
+    const prefix = item?.pricing_status === 'estimated' ? '~' : '';
+    return prefix + '$' + Number(item?.cost || 0).toFixed(2);
+}
+
+function aggregatePricingStatus(items) {
+    if (items.some(item => item?.pricing_status === 'unknown')) return 'unknown';
+    if (items.some(item => item?.pricing_status === 'estimated')) return 'estimated';
+    if (items.some(item => item?.pricing_status === 'reported')) return 'reported';
+    return 'unknown';
 }
 
 function formatDuration(seconds) {
@@ -316,7 +323,7 @@ function renderProjects() {
                 <span class="model-stat token-wide" title="${escapeHtml(tokenTitle(m))}">${formatCompactNumber(m.tokens)} tok</span>
                 <span class="model-stat token-detail-wide">${escapeHtml(tokenDetailText(m, true))}</span>
                 <span class="model-stat" style="color: var(--accent-blue)">${(m.avg_tps || 0).toFixed(1)} tok/s</span>
-                <span class="model-stat cost">$${m.cost.toFixed(2)}</span>
+                <span class="model-stat cost">${displayCost(m)}</span>
             </div>
         `).join('');
 
@@ -340,13 +347,13 @@ function renderProjects() {
                 <td style="color: var(--accent-purple)">${p.llm_time_display}</td>
                 <td style="color: var(--accent-yellow)">${p.tool_time_display}</td>
                 <td style="color: var(--accent-blue)">${(p.avg_tps || 0).toFixed(1)}</td>
-                <td class="cost">$${p.cost.toFixed(2)}</td>
+                <td class="cost">${displayCost(p)}</td>
                 <td style="color: var(--text-secondary)">${p.last_activity_display}</td>
             </tr>
             <tr class="model-breakdown" id="${rowId}">
                 <td colspan="9">
                     <div class="model-tree">
-                        <div class="detail-line"><strong>Path:</strong> ${escapeHtml(p.name)}</div>
+                        <div class="detail-line"><strong>Project:</strong> ${escapeHtml(p.name)}</div>
                         <div class="detail-line" title="${escapeHtml(tokenTitle(p))}"><strong>Tokens:</strong> ${formatCompactNumber(p.tokens)} ${tokenDetailText(p, true) ? `(${escapeHtml(tokenDetailText(p, true))})` : ''}</div>
                         <div style="font-weight: 600; margin-bottom: 8px; color: var(--text-secondary)">Models:</div>
                         ${modelRows || '<div style="color: var(--text-secondary)">No model data</div>'}
@@ -406,7 +413,7 @@ function renderSessions() {
             case 'start':
                 return s.start ? new Date(s.start).getTime() : 0;
             case 'project':
-                return s.cwd.toLowerCase();
+                return String(s.project_name || 'unknown').toLowerCase();
             default:
                 return s[field] || 0;
         }
@@ -435,14 +442,12 @@ function renderSessions() {
         // If no subagent sessions, just show the main session as a regular row
         if (!hasSubs) {
             const sessionUrl = '/session?uid=' + encodeURIComponent(s.uid);
-            const resumePath = s.path.replace(/\\\\/g, '/');
-            const resumeCmd = buildResumeCmd(s.agent_cmd, s.cwd, resumePath, s.uid);
-            const sessionName = displayNameFromPath(s.cwd);
+            const sessionName = s.project_name || 'unknown';
             const shortProject = sessionName.length > 40 ? sessionName.slice(0, 37) + '...' : sessionName;
 
             html += `
                 <tr>
-                    <td class="project-name" title="${escapeHtml(s.cwd)}">${escapeHtml(shortProject)}</td>
+                    <td class="project-name" title="${escapeHtml(shortProject)}">${escapeHtml(shortProject)}</td>
                     <td style="color: var(--text-secondary)">${s.start_display}</td>
                     <td style="color: var(--text-secondary)">${s.duration_display}</td>
                     <td style="color: var(--accent-purple)">${s.llm_time_display}</td>
@@ -450,9 +455,9 @@ function renderSessions() {
                     <td style="color: var(--accent-blue)">${(s.avg_tps || 0).toFixed(1)}</td>
                     <td title="${formatFullNumber(s.messages)}">${formatCompactNumber(s.messages)}</td>
                     <td class="tokens">${tokenCellHtml(s)}</td>
-                    <td class="cost">$${s.cost.toFixed(2)}</td>
+                    <td class="cost">${displayCost(s)}</td>
                     <td>
-                        <button onclick="copyResumeCommand(event, this.dataset.resumeCmd)" data-resume-cmd="${escapeHtml(resumeCmd)}" class="icon-btn" title="Copy resume command">Copy</button>
+                        <button onclick="copyResumeCommand(event, this.dataset.resumeUid)" data-resume-uid="${escapeHtml(s.uid)}" class="icon-btn" title="Copy resume command">Copy</button>
                         <a href="${sessionUrl}" class="session-link" target="_blank" title="View full session">Open →</a>
                     </td>
                 </tr>
@@ -479,7 +484,7 @@ function renderSessions() {
         const latestEnd = ends.length ? new Date(Math.max(...ends.map(d => new Date(d)))) : null;
         const totalDuration = earliestStart && latestEnd ? (latestEnd - earliestStart) / 1000 : 0;
 
-        const sessionName = displayNameFromPath(s.cwd);
+        const sessionName = s.project_name || 'unknown';
         const shortProject = sessionName.length > 40 ? sessionName.slice(0, 37) + '...' : sessionName;
 
         // Format date to match other sessions (YYYY-MM-DD HH:MM)
@@ -487,8 +492,6 @@ function renderSessions() {
 
         // Summary row with resume/open buttons
         const sessionUrl = '/session?uid=' + encodeURIComponent(s.uid);
-        const resumePath = s.path.replace(/\\\\/g, '/');
-        const resumeCmd = buildResumeCmd(s.agent_cmd, s.cwd, resumePath, s.uid);
 
         // Calculate average tokens/sec for aggregated sessions
         const tpsValues = allSessionsInGroup.map(session => session.avg_tps || 0).filter(v => v > 0);
@@ -496,7 +499,7 @@ function renderSessions() {
 
         html += `
             <tr class="expandable-row" data-target="${projectId}" onclick="toggleProjectRow('${projectId}')">
-                <td class="project-name" title="${escapeHtml(s.cwd)}">
+                <td class="project-name" title="${escapeHtml(sessionName)}">
                     <span class="expand-icon">▶</span>
                     ${escapeHtml(shortProject)}
                 </td>
@@ -507,16 +510,16 @@ function renderSessions() {
                 <td style="color: var(--accent-blue)">${aggAvgTps.toFixed(1)}</td>
                 <td title="${formatFullNumber(aggMessages)}">${formatCompactNumber(aggMessages)}</td>
                 <td class="tokens">${tokenCellHtml(aggTokenCounts)}</td>
-                <td class="cost">$${aggCost.toFixed(2)}</td>
+                <td class="cost">${displayCost({ cost: aggCost, pricing_status: aggregatePricingStatus(allSessionsInGroup) })}</td>
                 <td>
-                    <button onclick="event.stopPropagation(); copyResumeCommand(event, this.dataset.resumeCmd)" data-resume-cmd="${escapeHtml(resumeCmd)}" class="icon-btn" title="Copy resume command">Copy</button>
+                    <button onclick="event.stopPropagation(); copyResumeCommand(event, this.dataset.resumeUid)" data-resume-uid="${escapeHtml(s.uid)}" class="icon-btn" title="Copy resume command">Copy</button>
                     <a href="${sessionUrl}" class="session-link" target="_blank" title="View full session" onclick="event.stopPropagation()">Open →</a>
                 </td>
             </tr>
             <tr class="model-breakdown" id="${projectId}">
                 <td colspan="10" style="padding: 0">
                     <div class="model-tree">
-                        <div class="detail-line"><strong>Path:</strong> ${escapeHtml(s.cwd)}</div>
+                        <div class="detail-line"><strong>Project:</strong> ${escapeHtml(sessionName)}</div>
                         <div class="detail-line"><strong>Tokens:</strong> ${formatFullNumber(aggTokenCounts.tokens)} ${tokenDetailText(aggTokenCounts) ? `(${escapeHtml(tokenDetailText(aggTokenCounts))})` : ''}</div>
         `;
 
@@ -534,9 +537,9 @@ function renderSessions() {
                 <span class="model-stat">${formatFullNumber(s.messages)} msgs</span>
                 <span class="model-stat token-wide" title="${escapeHtml(tokenTitle(s))}">${formatFullNumber(s.tokens)} tok</span>
                 <span class="model-stat token-detail-wide">${escapeHtml(tokenDetailText(s))}</span>
-                <span class="model-stat cost">$${s.cost.toFixed(2)}</span>
+                <span class="model-stat cost">${displayCost(s)}</span>
                 <span style="margin-left: 8px">
-                    <button onclick="copyResumeCommand(event, this.dataset.resumeCmd)" data-resume-cmd="${escapeHtml(resumeCmd)}" class="icon-btn" title="Copy resume command">Copy</button>
+                    <button onclick="copyResumeCommand(event, this.dataset.resumeUid)" data-resume-uid="${escapeHtml(s.uid)}" class="icon-btn" title="Copy resume command">Copy</button>
                     <a href="${sessionUrl}" class="session-link" target="_blank" title="View full session">Open →</a>
                 </span>
             </div>
@@ -545,9 +548,6 @@ function renderSessions() {
         // Subagent sessions with buttons
         subs.forEach(sub => {
             const subSessionUrl = '/session?uid=' + encodeURIComponent(sub.uid);
-            const subResumePath = sub.path.replace(/\\\\/g, '/');
-            // Use parent session's agent_cmd for subagent resume command
-            const subResumeCmd = buildResumeCmd(s.agent_cmd, sub.cwd, subResumePath, sub.uid);
 
             // Just show the filename, not the full relative path
             const fileName = sub.file;
@@ -565,9 +565,9 @@ function renderSessions() {
                     <span class="model-stat">${formatFullNumber(sub.messages)} msgs</span>
                     <span class="model-stat token-wide" title="${escapeHtml(tokenTitle(sub))}">${formatFullNumber(sub.tokens)} tok</span>
                     <span class="model-stat token-detail-wide">${escapeHtml(tokenDetailText(sub))}</span>
-                    <span class="model-stat cost">$${sub.cost.toFixed(2)}</span>
+                    <span class="model-stat cost">${displayCost(sub)}</span>
                     <span style="margin-left: 8px">
-                        <button onclick="copyResumeCommand(event, this.dataset.resumeCmd)" data-resume-cmd="${escapeHtml(subResumeCmd)}" class="icon-btn" title="Copy resume command">Copy</button>
+                        <button onclick="copyResumeCommand(event, this.dataset.resumeUid)" data-resume-uid="${escapeHtml(sub.uid)}" class="icon-btn" title="Copy resume command">Copy</button>
                         <a href="${subSessionUrl}" class="session-link" target="_blank" title="View full session">Open →</a>
                     </span>
                 </div>
@@ -584,7 +584,7 @@ function renderSessions() {
     tbody.innerHTML = html;
 }
 
-function copyResumeCommand(event, cmd) {
+function copyResumeCommand(event, sessionUid) {
     const btn = event.target;
 
     function showSuccess() {
@@ -597,13 +597,14 @@ function copyResumeCommand(event, cmd) {
         }, 1500);
     }
 
-    // Use clipboard API if available (HTTPS or localhost)
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(cmd).then(showSuccess).catch(err => {
-            console.error('Failed to copy:', err);
-        });
-    } else {
-        // Fallback for HTTP contexts
+    fetch(buildResumeUrl(sessionUid)).then(response => {
+        if (!response.ok) throw new Error('Resume command unavailable');
+        return response.text();
+    }).then(cmd => {
+        // Use clipboard API if available (HTTPS or localhost).
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            return navigator.clipboard.writeText(cmd);
+        }
         const textArea = document.createElement('textarea');
         textArea.value = cmd;
         textArea.style.position = 'fixed';
@@ -611,14 +612,11 @@ function copyResumeCommand(event, cmd) {
         textArea.setAttribute('readonly', '');
         document.body.appendChild(textArea);
         textArea.select();
-        try {
-            document.execCommand('copy');
-            showSuccess();
-        } catch (err) {
-            console.error('Fallback copy failed:', err);
-        }
+        document.execCommand('copy');
         document.body.removeChild(textArea);
-    }
+    }).then(showSuccess).catch(err => {
+        console.error('Failed to copy:', err);
+    });
 }
 
 function setupSorting(tableId, sortState, renderFn) {
@@ -690,7 +688,7 @@ function renderModels() {
                 <td class="tokens" title="${formatFullNumber(m.cache_write_tokens)}">${formatCompactNumber(m.cache_write_tokens)}</td>
                 <td class="tokens" title="${formatFullNumber(m.reasoning_tokens)}">${formatCompactNumber(m.reasoning_tokens)}</td>
                 <td style="color: var(--accent-blue)">${(m.avg_tps || 0).toFixed(1)}</td>
-                <td class="cost">$${m.cost.toFixed(2)}</td>
+                <td class="cost">${displayCost(m)}</td>
                 <td>
                     <div class="bar-container" style="width: 100px; display: inline-block; vertical-align: middle;">
                         <div class="bar" style="width: ${m.pct}%"></div>
